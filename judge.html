@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>審査員 採点</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --red: #e60023; --blue: #0b57a4; --bg: #0b0b0d; --panel: #17171b; --line: #2a2a31; --text: #f4f4f6; --muted: #9a9aa6; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; }
+  body { min-height: 100dvh; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  header .ev { font-family: 'Oswald', sans-serif; font-size: 18px; letter-spacing: .04em; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  header .me { font-weight: 700; font-size: 14px; background: #fff; color: #000; padding: 4px 10px; border-radius: 999px; }
+  header button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; }
+  main { padding: 16px; max-width: 760px; margin: 0 auto; }
+  .net { display: none; background: #6b4a00; color: #fff; text-align: center; font-size: 13px; padding: 6px; }
+  .net.on { display: block; }
+  .demo { background: #333; color: #ffd84d; font-size: 12px; text-align: center; padding: 4px; }
+
+  /* ログイン */
+  .login { background: var(--panel); border-radius: 16px; padding: 24px 20px; margin-top: 8vh; }
+  .login h1 { font-size: 20px; margin: 0 0 18px; }
+  .login label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+  .login select, .login input { width: 100%; font: inherit; font-size: 18px; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: #0f0f12; color: var(--text); }
+  .btn { display: block; width: 100%; border: 0; border-radius: 12px; padding: 16px; font: inherit; font-weight: 900; font-size: 18px; background: #fff; color: #000; margin-top: 22px; }
+  .btn:disabled { opacity: .35; }
+  .err { color: #ff6b7d; font-size: 14px; margin-top: 12px; min-height: 1em; }
+
+  /* 待機 */
+  .wait { text-align: center; padding: 14vh 10px 0; color: var(--muted); }
+  .wait .big { font-family: 'Oswald', sans-serif; font-size: 40px; color: var(--text); letter-spacing: .06em; }
+  .wait .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #3ddc84; margin-right: 8px; animation: blink 1.4s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  /* 採点 */
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tabs button { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-weight: 700; }
+  .tabs button.on { background: #fff; color: #000; }
+  .meta { display: flex; justify-content: space-between; font-family: 'Oswald', 'Noto Sans JP', sans-serif; font-size: 15px; color: var(--muted); margin-bottom: 10px; letter-spacing: .04em; }
+  .meta b { color: var(--text); }
+  .sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .side { border-radius: 16px; padding: 12px 10px 14px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .side.red { background: linear-gradient(180deg, color-mix(in srgb, var(--red) 45%, #000), color-mix(in srgb, var(--red) 18%, #000)); border: 2px solid var(--red); }
+  .side.blue { background: linear-gradient(180deg, color-mix(in srgb, var(--blue) 50%, #000), color-mix(in srgb, var(--blue) 20%, #000)); border: 2px solid var(--blue); }
+  .corner { font-family: 'Oswald', sans-serif; font-size: 13px; letter-spacing: .15em; opacity: .85; }
+  .photo { width: 100px; height: 92px; object-fit: contain; object-position: center bottom; margin: 8px 0; background: rgba(0,0,0,.35); display: grid; place-items: center; font-family: 'Oswald', sans-serif; font-size: 40px; }
+  .name { font-weight: 900; font-size: 19px; line-height: 1.25; word-break: break-word; min-height: 2.5em; display: flex; align-items: center; }
+  .org { font-size: 12px; opacity: .75; min-height: 1.3em; }
+  .num { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 84px; line-height: 1; margin: 10px 0 12px; }
+  .pm { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+  .pm button { height: 64px; border-radius: 12px; border: 0; font-size: 34px; font-weight: 900; background: rgba(255,255,255,.92); color: #000; }
+  .pm button:active { transform: scale(.96); }
+  .pm button:disabled { opacity: .25; }
+  .remain { text-align: center; margin: 16px 0 0; font-size: 16px; color: var(--muted); }
+  .remain b { color: var(--text); font-size: 22px; font-family: 'Oswald', sans-serif; }
+  .done { text-align: center; background: var(--panel); border-radius: 16px; padding: 18px; margin-top: 14px; }
+  .done .ok { font-size: 20px; font-weight: 900; color: #3ddc84; }
+  .done .sc { font-family: 'Oswald', sans-serif; font-size: 34px; margin: 6px 0; }
+  .done .sc .r { color: #ff5a6e; } .done .sc .b { color: #5aa2ff; }
+  .done small { color: var(--muted); }
+  .ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+
+  /* 確認 */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10; }
+  .modal.on { display: flex; }
+  .modal .box { background: #fff; color: #000; border-radius: 18px; padding: 22px 20px; width: 100%; max-width: 420px; text-align: center; }
+  .modal .q { font-weight: 900; font-size: 18px; }
+  .modal .row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin: 18px 0; }
+  .modal .row div { font-weight: 700; word-break: break-word; }
+  .modal .row .p { font-family: 'Oswald', sans-serif; font-size: 44px; }
+  .modal .btns { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+  .modal .btns button { padding: 14px; border-radius: 12px; font: inherit; font-weight: 900; font-size: 17px; border: 0; }
+  .modal .no { background: #e6e6ea; } .modal .yes { background: #000; color: #fff; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: #fff; color: #000; padding: 10px 18px; border-radius: 999px; font-weight: 700; opacity: 0; transition: .25s; pointer-events: none; z-index: 20; max-width: 90vw; }
+  #toast.show { opacity: 1; transform: translateX(-50%); } #toast.err { background: #ff5a6e; color: #fff; }
+</style>
+</head>
+<body>
+<div class="demo" id="demo" hidden>デモモード（このブラウザの中だけで動いています）</div>
+<div class="net" id="net">通信が切れています。電波を確認してください</div>
+<header>
+  <div class="ev" id="evname">JUDGE</div>
+  <div class="me" id="mename" hidden></div>
+  <button id="logout" hidden>切替</button>
+</header>
+<main id="main"><div class="wait">読み込み中…</div></main>
+<div class="modal" id="modal"><div class="box">
+  <div class="q">この点数で送信しますか？</div>
+  <div class="row"><div id="mRedName"></div><div class="p"><span id="mRed" style="color:var(--red)"></span> - <span id="mBlue" style="color:var(--blue)"></span></div><div id="mBlueName"></div></div>
+  <div class="btns"><button class="no" id="mNo">戻る</button><button class="yes" id="mYes">送信する</button></div>
+</div></div>
+
+<script type="module">
+import { $, esc, openStore, normalizeEvent, buildView, groupLabel, stageName, refName, imgSrc, toast, DEMO } from './assets/core.js?v=7';
+
+$('#demo').hidden = !DEMO;
+let store;
+try { store = await openStore(); }
+catch (e) { $('#main').innerHTML = '<div class="wait">読み込みに失敗しました。<br>ページを再読み込みしてください。</div>'; throw e; }
+
+const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => localStorage.setItem(k, JSON.stringify(v)) };
+let me = LS.get('bj_judge', null);           // { id }
+let sent = LS.get('bj_sent', {});             // "judge|match|round" -> {red, blue}
+let ev = null, V = null, images = {};
+const drafts = {};                            // "match|round" -> {red, blue}
+const editing = {};
+let selected = null, lastHtml = '';
+
+store.onEvent(e => { ev = normalizeEvent(e); V = buildView(ev); render(); }, ok => $('#net').classList.toggle('on', !ok));
+store.onImages(m => { images = m; render(); });
+
+$('#logout').onclick = () => { if (confirm('審査員を切り替えますか？')) { me = null; LS.set('bj_judge', null); render(true); } };
+
+function render(force) {
+  if (!ev) return;
+  const S = ev.settings;
+  document.documentElement.style.setProperty('--red', S.red);
+  document.documentElement.style.setProperty('--blue', S.blue);
+  $('#evname').textContent = S.eventName || 'JUDGE';
+  const j = me && V.judgeById[me.id];
+  if (me && !j) { me = null; LS.set('bj_judge', null); }
+  $('#mename').hidden = !j; $('#logout').hidden = !j;
+  if (j) $('#mename').textContent = j.name;
+  const html = j ? scoreHtml(j) : loginHtml();
+  if (!force && html === lastHtml) return;
+  lastHtml = html;
+  $('#main').innerHTML = html;
+}
+
+function loginHtml() {
+  if (!ev.judges.length) return '<div class="wait">審査員がまだ登録されていません</div>';
+  return `<form class="login" id="loginForm">
+    <h1>審査員ログイン</h1>
+    <label>あなたの名前</label>
+    <select id="lj"><option value="">選んでください</option>${ev.judges.map(j => `<option value="${esc(j.id)}">${esc(j.name)}</option>`).join('')}</select>
+    <label>審査員パスワード</label>
+    <input id="lp" type="password" autocomplete="off" placeholder="（設定されていなければ空欄）">
+    <button class="btn" type="submit">はじめる</button>
+    <div class="err" id="lerr"></div>
+  </form>`;
+}
+
+document.addEventListener('submit', async e => {
+  if (e.target.id !== 'loginForm') return;
+  e.preventDefault();
+  const id = $('#lj').value, pass = $('#lp').value;
+  if (!id) { $('#lerr').textContent = '名前を選んでください'; return; }
+  try { await store.loginJudge(id, pass); me = { id }; LS.set('bj_judge', me); render(true); }
+  catch (err) { $('#lerr').textContent = err.message; }
+});
+
+function myMatches() {
+  return Object.entries(ev.live || {})
+    .filter(([, L]) => L.judges.includes(me.id))
+    .map(([id, L]) => ({ m: V.matchById[id], L }))
+    .filter(x => x.m);
+}
+
+function scoreHtml(j) {
+  const list = myMatches();
+  if (!list.length) {
+    return `<div class="wait"><div class="big">STAND BY</div><p><span class="dot"></span>次のバトルを待っています</p><p style="font-size:13px">バトルが始まると自動でこの画面が切り替わります</p></div>`;
+  }
+  if (!selected || !list.some(x => x.m.id === selected)) selected = list[0].m.id;
+  const { m, L } = list.find(x => x.m.id === selected);
+  const S = ev.settings, P = +S.points;
+  const key = `${m.id}|${L.round}`, skey = `${me.id}|${m.id}|${L.round}`;
+  const d = drafts[key] ||= { red: 0, blue: 0 };
+  const red = V.resolve(m.red), blue = V.resolve(m.blue);
+  const done = sent[skey] && !editing[key];
+  const sum = d.red + d.blue, rest = P - sum;
+  const canSend = S.mustUseAll ? sum === P : true;
+  const side = (c, r) => {
+    const t = r.team, src = t ? imgSrc(t.photo, images) : '';
+    const ph = src ? `<img class="photo" src="${esc(src)}" alt="">` : S.photoFallback === 'initial' ? `<div class="photo">${esc((refName(r) || '?').slice(0, 1))}</div>` : '';
+    const v = done ? sent[skey][c] : d[c], other = c === 'red' ? d.blue : d.red;
+    const canInc = d[c] < P && (rest > 0 || (S.mustUseAll && other > 0));
+    return `<div class="side ${c}">
+      <div class="corner">${c === 'red' ? 'RED' : 'BLUE'}</div>${ph}
+      <div class="name">${esc(refName(r))}</div><div class="org">${esc(t && S.showOrg ? t.org : '')}</div>
+      <div class="num">${v}</div>
+      ${done ? '' : `<div class="pm"><button data-a="dec" data-c="${c}" ${d[c] <= 0 ? 'disabled' : ''}>−</button><button data-a="inc" data-c="${c}" ${canInc ? '' : 'disabled'}>＋</button></div>`}
+    </div>`;
+  };
+  const tabs = list.length > 1 ? `<div class="tabs">${list.map(x => `<button data-a="tab" data-id="${esc(x.m.id)}" class="${x.m.id === selected ? 'on' : ''}">${esc(stageName(x.m, ev))}</button>`).join('')}</div>` : '';
+  return `${tabs}
+    <div class="meta"><span><b>${esc(groupLabel(m, ev))}</b>${m.extra ? ` ・ 延長${m.extra}` : ''}</span><span>${esc(stageName(m, ev))}</span></div>
+    <div class="sides">${side('red', red)}${side('blue', blue)}</div>
+    ${done ? `<div class="done"><div class="ok">✓ 送信しました</div>
+        <div class="sc"><span class="r">${sent[skey].red}</span> - <span class="b">${sent[skey].blue}</span></div>
+        <small>結果が反映されるまでは修正できます</small>
+        <button class="btn ghost" data-a="edit">修正する</button></div>`
+      : `<div class="remain">持ち点 ${P} 点 ／ 残り <b>${rest}</b> 点${S.mustUseAll ? '（すべて振り分けてください）' : ''}</div>
+         <button class="btn" data-a="send" ${canSend ? '' : 'disabled'}>送信</button>`}`;
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-a]');
+  if (!b || !ev || !me) return;
+  const list = myMatches(), cur = list.find(x => x.m.id === selected);
+  const a = b.dataset.a;
+  if (a === 'tab') { selected = b.dataset.id; return render(true); }
+  if (!cur) return;
+  const key = `${cur.m.id}|${cur.L.round}`, d = drafts[key];
+  const S = ev.settings, P = +S.points;
+  if (a === 'inc' || a === 'dec') {
+    const c = b.dataset.c, o = c === 'red' ? 'blue' : 'red';
+    if (a === 'dec') d[c] = Math.max(0, d[c] - 1);
+    else if (d.red + d.blue < P) d[c]++;
+    else if (S.mustUseAll && d[o] > 0) { d[c]++; d[o]--; }
+    if (navigator.vibrate) navigator.vibrate(10);
+    return render(true);
+  }
+  if (a === 'edit') { editing[key] = true; Object.assign(d, sent[`${me.id}|${cur.m.id}|${cur.L.round}`]); return render(true); }
+  if (a === 'send') {
+    $('#mRedName').textContent = refName(V.resolve(cur.m.red));
+    $('#mBlueName').textContent = refName(V.resolve(cur.m.blue));
+    $('#mRed').textContent = d.red; $('#mBlue').textContent = d.blue;
+    $('#modal').classList.add('on');
+    $('#mYes').onclick = async () => {
+      $('#mYes').disabled = true;
+      try {
+        await store.submitScore({ match: cur.m.id, round: cur.L.round, judge: me.id, red: d.red, blue: d.blue });
+        sent[`${me.id}|${cur.m.id}|${cur.L.round}`] = { red: d.red, blue: d.blue }; LS.set('bj_sent', sent);
+        editing[key] = false;
+        $('#modal').classList.remove('on');
+        toast('送信しました');
+        render(true);
+      } catch (err) { toast(err.message, true); }
+      finally { $('#mYes').disabled = false; }
+    };
+  }
+});
+$('#mNo').onclick = () => $('#modal').classList.remove('on');
+</script>
+</body>
+</html>

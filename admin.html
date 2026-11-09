@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>管理画面</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --red: #e60023; --blue: #0b57a4; --bg: #f3f3f6; --card: #fff; --line: #e1e1e8; --text: #16161a; --muted: #75757f; --ok: #12a150; --warn: #d98b00; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; }
+  button, input, select, textarea { font: inherit; }
+  header { position: sticky; top: 0; z-index: 5; background: #111; color: #fff; display: flex; align-items: center; gap: 14px; padding: 10px 18px; flex-wrap: wrap; }
+  header h1 { font-family: 'Oswald', 'Noto Sans JP', sans-serif; font-size: 20px; margin: 0; font-weight: 500; letter-spacing: .03em; }
+  header .sp { flex: 1; }
+  header a { color: #fff; text-decoration: none; border: 1px solid #444; border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+  .conn { font-size: 12px; } .conn.ok::before { content: '●'; color: #3ddc84; margin-right: 4px; } .conn.ng::before { content: '●'; color: #ff5a6e; margin-right: 4px; }
+  .demo { background: #ffd84d; color: #000; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+  nav { display: flex; gap: 4px; padding: 10px 18px 0; background: #111; position: sticky; top: 52px; z-index: 4; overflow-x: auto; }
+  nav button { background: #222; color: #bbb; border: 0; padding: 10px 18px; border-radius: 10px 10px 0 0; font-weight: 700; white-space: nowrap; cursor: pointer; }
+  nav button.on { background: var(--bg); color: #000; }
+  main { padding: 18px; max-width: 1280px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 16px; margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+  .card h2 small { font-weight: 400; color: var(--muted); font-size: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 8px 14px; cursor: pointer; font-weight: 700; white-space: nowrap; }
+  .btn:hover { border-color: #aaa; }
+  .btn.pri { background: #111; color: #fff; border-color: #111; }
+  .btn.go { background: var(--ok); color: #fff; border-color: var(--ok); }
+  .btn.red { background: var(--red); color: #fff; border-color: var(--red); }
+  .btn.warn { background: #fff4dc; border-color: #f0c66b; }
+  .btn.sm { padding: 5px 10px; font-size: 12px; }
+  .btn.on { background: #111; color: #fff; border-color: #111; }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; background: #fff; padding: 9px 16px; font-weight: 700; cursor: pointer; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: 0; }
+  .seg button.on { background: #111; color: #fff; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: #eef0f5; border-radius: 999px; padding: 4px 6px 4px 12px; font-weight: 700; font-size: 13px; }
+  .chip button { border: 0; background: #d5d8e0; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; line-height: 1; }
+  .muted { color: var(--muted); }
+  .hint { color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .err { color: #d4003a; }
+
+  /* 進行 */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .mlist { display: grid; gap: 8px; }
+  .m { display: grid; grid-template-columns: 120px 1fr 1.1fr auto; gap: 14px; align-items: center; background: #fff; border: 1px solid var(--line); border-left: 6px solid #ccc; border-radius: 12px; padding: 10px 14px; }
+  .m.s-採点中 { border-left-color: var(--warn); background: #fffaf0; }
+  .m.s-確定 { border-left-color: var(--ok); }
+  .m .id { font-family: 'Oswald', sans-serif; font-size: 22px; line-height: 1; }
+  .m .id small { display: block; font-family: 'Noto Sans JP', sans-serif; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .m .vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+  .m .vs .t { font-weight: 900; font-size: 15px; line-height: 1.25; }
+  .m .vs .t small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+  .m .vs .t.r { text-align: right; color: color-mix(in srgb, var(--red) 85%, #000); }
+  .m .vs .t.b { color: color-mix(in srgb, var(--blue) 85%, #000); }
+  .m .vs .t.ph { color: var(--muted); font-weight: 500; font-style: italic; }
+  .m .vs .t.w::after { content: ' WIN'; font-family: 'Oswald', sans-serif; font-size: 11px; background: var(--ok); color: #fff; padding: 1px 5px; border-radius: 4px; vertical-align: middle; }
+  .m .vs .t.r.w::after { content: 'WIN '; margin-right: 4px; }
+  .m .vs .x { font-family: 'Oswald', sans-serif; font-size: 22px; text-align: center; min-width: 74px; }
+  .m .vs .x .rs { color: var(--red); } .m .vs .x .bs { color: var(--blue); }
+  .js { display: flex; gap: 5px; flex-wrap: wrap; }
+  .j { font-size: 12px; padding: 4px 8px; border-radius: 7px; background: #f0f0f3; color: var(--muted); white-space: nowrap; }
+  .j.ok { background: #e3f6ea; color: #0b6b34; font-weight: 700; }
+  .j.ok b { font-family: 'Oswald', sans-serif; margin-left: 4px; }
+  .acts { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .tv { font-size: 16px; padding: 6px 10px; }
+  .st { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: #eee; display: inline-block; margin-top: 4px; }
+  .st.s-採点中 { background: var(--warn); color: #fff; } .st.s-確定 { background: var(--ok); color: #fff; }
+  .standings { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .standings table { width: 100%; border-collapse: collapse; }
+  .standings th, .standings td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: center; }
+  .standings td.n { text-align: left; font-weight: 700; }
+  .standings tr.q td { background: #eaf7ef; }
+  .tie { background: #fff1d6; color: #8a5a00; padding: 6px 10px; border-radius: 8px; font-size: 12px; margin-top: 8px; }
+
+  /* 登録系 */
+  table.ed { width: 100%; border-collapse: collapse; }
+  table.ed th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 500; padding: 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.ed td { padding: 5px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  table.ed input[type=text], table.ed input[type=number], table.ed select { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+  table.ed input[type=number] { width: 70px; }
+  table.ed tr.dis { opacity: .55; }
+  .pic { width: 52px; height: 52px; border-radius: 8px; background: #eee center/cover; border: 1px dashed #bbb; cursor: pointer; display: grid; place-items: center; color: #999; font-size: 11px; position: relative; }
+  .pic.has { border-style: solid; border-color: transparent; }
+  .piclinks { font-size: 11px; display: flex; gap: 6px; margin-top: 3px; }
+  .piclinks a { color: var(--muted); cursor: pointer; text-decoration: underline; }
+  textarea { width: 100%; min-height: 110px; border: 1px solid var(--line); border-radius: 9px; padding: 10px; font-family: ui-monospace, monospace; font-size: 13px; }
+  .form { display: grid; grid-template-columns: 200px 1fr; gap: 12px 16px; align-items: center; }
+  .form label { font-weight: 700; }
+  .form input[type=text], .form input[type=number], .form input[type=password] { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; width: 100%; max-width: 480px; }
+  .form input[type=color] { width: 64px; height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 2px; }
+  .imgset { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .imgset .prev { width: 180px; height: 100px; border-radius: 8px; border: 1px solid var(--line); background: #222 center/contain no-repeat; }
+  .cb { width: 20px; height: 20px; }
+  .pv { max-width: 1280px; margin: 18px auto 0; padding: 0 18px; }
+  .pv iframe { width: 100%; max-width: 960px; aspect-ratio: 16 / 9; border: 0; border-radius: 10px; background: #000; display: block; }
+
+  /* ログイン */
+  .gate { max-width: 420px; margin: 12vh auto; background: #fff; border-radius: 16px; padding: 28px; border: 1px solid var(--line); }
+  .gate h1 { font-size: 20px; margin: 0 0 16px; }
+  .gate input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px; margin: 6px 0 12px; font-size: 16px; }
+  .gate .btn { width: 100%; padding: 12px; font-size: 16px; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: #111; color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 700; opacity: 0; transition: .25s; pointer-events: none; z-index: 20; }
+  #toast.show { opacity: 1; transform: translateX(-50%); } #toast.err { background: #d4003a; }
+  @media (max-width: 900px) { .m { grid-template-columns: 1fr; } .acts { justify-content: flex-start; } .form { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="app"><div class="gate">読み込み中…</div></div>
+<input type="file" id="file" accept="image/*" hidden>
+<input type="file" id="jsonFile" accept="application/json" hidden>
+
+<script type="module">
+import { $, $$, esc, clone, uid, toast, DEMO, openStore, normalizeEvent, buildView, emptyEvent, sampleEvent, genLeagueMatches, genFinalMatches, newMatch, judgesFor, groupLabel, stageName, refName, imgSrc, fileToDataUrl, tally, leaguesOf } from './assets/core.js?v=7';
+
+const store = await openStore();
+const app = $('#app');
+const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => localStorage.setItem(k, JSON.stringify(v)) };
+
+// ---------- 入口：初期設定 / ログイン ----------
+
+function setupGate() {
+  app.innerHTML = `<form class="gate" id="g"><h1>はじめての設定</h1>
+    <p class="hint">最初に1回だけ行います。管理パスワードは管理画面に入るときに、審査員パスワードは審査員がログインするときに使います。</p>
+    <label>管理パスワード（4文字以上）</label><input id="ap" type="text" required minlength="4">
+    <label>審査員パスワード（空欄なら無し）</label><input id="jp" type="text">
+    <label style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="sm" checked style="width:auto;margin:0"> サンプルデータを入れておく</label>
+    <button class="btn pri">設定してはじめる</button><p class="err" id="ge"></p></form>`;
+  $('#g').onsubmit = async e => {
+    e.preventDefault();
+    try {
+      await store.initialize({ adminPass: $('#ap').value, judgePass: $('#jp').value, event: $('#sm').checked ? sampleEvent() : emptyEvent() });
+      start();
+    } catch (err) { $('#ge').textContent = err.message; }
+  };
+}
+function loginGate() {
+  app.innerHTML = `<form class="gate" id="g"><h1>管理画面ログイン</h1><label>管理パスワード</label><input id="ap" type="password" autofocus><button class="btn pri">ログイン</button><p class="err" id="ge"></p></form>`;
+  $('#g').onsubmit = async e => {
+    e.preventDefault();
+    try { await store.loginAdmin($('#ap').value); start(); } catch (err) { $('#ge').textContent = err.message; }
+  };
+}
+
+// ---------- 本体 ----------
+let ev = null, V = null, images = {}, scores = [], tab = LS.get('bj_admin_tab', 'run'), filter = LS.get('bj_admin_filter', 'all');
+let autoShow = LS.get('bj_autoshow', true), pending = false, lastHtml = '';
+
+function start() {
+  app.innerHTML = `<header><h1 id="hname">管理画面</h1>${DEMO ? '<span class="demo">デモモード</span>' : ''}<span class="conn ok" id="conn">接続中</span><span class="sp"></span>
+      <a href="screen.html${DEMO ? '?demo' : ''}" target="_blank">📺 スクリーンを開く</a><a href="judge.html${DEMO ? '?demo' : ''}" target="_blank">📱 審査員画面</a></header>
+    <nav id="nav">${[['run', '進行'], ['teams', 'チーム'], ['judges', '審査員'], ['matches', '対戦表'], ['settings', '表示・設定']].map(([k, l]) => `<button data-tab="${k}">${l}</button>`).join('')}</nav>
+    <div id="pv" class="pv" hidden><div class="card" style="margin:0"><h2>スクリーンのプレビュー <small>設定を変えるとすぐ反映されます</small></h2>
+      <div class="seg" style="margin-bottom:10px">${[['battle', 'バトル'], ['league', 'リーグ表'], ['tournament', 'トーナメント'], ['logo', 'ロゴ']].map(([k, l], i) => `<button data-pv="${k}" class="${i ? '' : 'on'}">${l}</button>`).join('')}</div>
+      <iframe id="pvf" src="screen.html?view=battle&sample=1${location.search.includes('demo') ? '&demo' : ''}"></iframe></div></div>
+    <main id="main"></main>`;
+  store.onEvent(e => { ev = normalizeEvent(e); V = buildView(ev); render(); }, ok => { const c = $('#conn'); c.className = 'conn ' + (ok ? 'ok' : 'ng'); c.textContent = ok ? '接続中' : '切断'; });
+  store.onImages(m => { images = m; render(); });
+  store.onScores(s => { scores = s; render(); });
+  document.addEventListener('focusout', () => setTimeout(() => { if (pending && !editingNow()) render(); }, 0));
+}
+const editingNow = () => { const a = document.activeElement; return a && a.closest && a.closest('#main') && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.type !== 'checkbox' && a.type !== 'button'; };
+
+function render(force) {
+  if (!ev) return;
+  $('#hname').textContent = (ev.settings.eventName || '') + '　管理画面';
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  $('#pv').hidden = tab !== 'settings';
+  if (!force && tab !== 'run' && editingNow()) { pending = true; return; }
+  pending = false;
+  const html = { run: runTab, teams: teamsTab, judges: judgesTab, matches: matchesTab, settings: settingsTab }[tab]();
+  if (!force && html === lastHtml) return;
+  lastHtml = html;
+  const y = scrollY;
+  $('#main').innerHTML = html;
+  scrollTo(0, y);
+}
+
+const save = async (fn, msg) => {
+  try { const r = await store.updateEvent(fn); if (msg) toast(msg); return r; }
+  catch (e) { console.error(e); toast(e.message || '保存できませんでした', true); }
+};
+
+// ===================== 進行 =====================
+function runTab() {
+  const sc = ev.screen, S = ev.settings;
+  const modeBtn = (k, l) => `<button data-act="mode" data-v="${k}" class="${sc.mode === k ? 'on' : ''}">${l}</button>`;
+  const onScreen = (sc.matches || []).map(id => `<span class="chip">${esc(id)}<button data-act="unshow" data-id="${esc(id)}">×</button></span>`).join(' ') || '<span class="muted">（未選択：採点中のバトルを自動で表示）</span>';
+  const leagues = V.leagues;
+  const fl = [['all', 'すべて'], ['s1', S.stage1Name], ['s2', S.stage2Name], ['final', '本戦'], ['rank', '予選の順位']];
+  let list;
+  if (filter === 'rank') list = standingsHtml();
+  else {
+    const ms = ev.matches.filter(m => filter === 'all' || (filter === 'final' ? m.type === '本戦' : (m.type === '予選' && String(m.stage) === (filter === 's2' ? '2' : '1'))));
+    list = ms.length ? `<div class="mlist">${ms.map(matchRow).join('')}</div>` : '<p class="muted">対戦がありません。「対戦表」タブで作成してください。</p>';
+  }
+  return `<div class="card"><h2>📺 スクリーン表示</h2>
+      <div class="row"><div class="seg">${modeBtn('logo', 'ロゴ')}${modeBtn('battle', 'バトル')}${modeBtn('league', 'リーグ表')}${modeBtn('tournament', 'トーナメント')}</div>
+      ${sc.mode === 'league' ? `<div class="seg">${['ALL', ...leagues].map(L => `<button data-act="league" data-v="${L}" class="${(sc.league || 'ALL') === L ? 'on' : ''}">${L === 'ALL' ? '全リーグ' : L}</button>`).join('')}</div>` : ''}</div>
+      <div class="row" style="margin-top:12px"><b>バトル画面に出す試合：</b>${onScreen}</div>
+      <label class="row hint" style="margin-top:10px"><input type="checkbox" class="cb" data-act="autoshow" ${autoShow ? 'checked' : ''}> 「採点開始」を押したら、その試合を自動でスクリーンに出す（2ステージ同時なら左右に並びます）</label>
+    </div>
+    <div class="filters seg">${fl.map(([k, l]) => `<button data-act="filter" data-v="${k}" class="${filter === k ? 'on' : ''}">${esc(l)}</button>`).join('')}</div>
+    ${list}`;
+}
+
+function matchRow(m) {
+  const S = ev.settings;
+  const red = V.resolve(m.red), blue = V.resolve(m.blue);
+  const fin = m.status === '確定', live = m.status === '採点中';
+  const L = ev.live[m.id];
+  const js = (live && L ? L.judges : judgesFor(m, ev));
+  const mine = scores.filter(s => s.match === m.id && s.round === m.round);
+  const chips = js.map(id => {
+    const j = V.judgeById[id], s = live ? mine.find(x => x.judge === id) : fin ? (m.scores || []).find(x => x.judge === id) : null;
+    return `<span class="j ${s ? 'ok' : ''}">${esc(j ? j.name : id)}${s ? `<b>${s.red}-${s.blue}</b>` : live ? ' …' : ''}</span>`;
+  }).join('') || '<span class="err">審査員が未設定</span>';
+  const got = live ? js.filter(id => mine.some(x => x.judge === id)).length : 0;
+  const t = (r, c) => `<div class="t ${c[0]} ${r.team ? '' : 'ph'} ${fin && m.winner === c ? 'w' : ''}">${esc(refName(r))}${r.team && r.team.org ? `<small>${esc(r.team.org)}</small>` : ''}</div>`;
+  const shown = (ev.screen.matches || []).includes(m.id);
+  let acts = '';
+  if (m.status === '未開始') acts = `<button class="btn pri" data-act="start" data-id="${esc(m.id)}">採点開始</button>`;
+  if (live) acts = `<button class="btn ${got === js.length ? 'go' : 'warn'}" data-act="reflect" data-id="${esc(m.id)}">反映 ${got}/${js.length}</button><button class="btn sm" data-act="reset" data-id="${esc(m.id)}">取消</button>`;
+  if (fin) acts = `<button class="btn sm" data-act="extra" data-id="${esc(m.id)}">延長（再採点）</button><button class="btn sm" data-act="reset" data-id="${esc(m.id)}">取消</button>`;
+  acts += `<button class="btn tv ${shown ? 'on' : ''}" title="スクリーンに出す" data-act="show" data-id="${esc(m.id)}">📺</button>`;
+  return `<div class="m s-${m.status}">
+    <div class="id">${esc(m.id)}<small>${esc(m.type === '予選' ? `${m.group}リーグ・${stageName(m, ev)}` : m.group)}${m.extra ? `・延長${m.extra}` : ''}</small><span class="st s-${m.status}">${m.status}</span></div>
+    <div class="vs">${t(red, 'red')}<div class="x">${fin ? `<span class="rs">${m.redTotal}</span> - <span class="bs">${m.blueTotal}</span>` : 'vs'}</div>${t(blue, 'blue')}</div>
+    <div class="js">${chips}</div>
+    <div class="acts">${acts}</div></div>`;
+}
+
+function standingsHtml() {
+  const q = +ev.settings.qualify || 0;
+  const cards = V.leagues.map(L => {
+    const st = V.standings[L];
+    return `<div class="card" style="margin:0"><h2>${esc(L)} リーグ <small>${st.done ? '全試合終了' : `${st.matches.filter(m => m.status === '確定').length}/${st.matches.length} 試合`}</small></h2>
+      <table><tr><th>順位</th><th style="text-align:left">チーム</th><th>勝</th><th>敗</th><th>分</th><th>Pt</th></tr>
+      ${st.rows.map(r => `<tr class="${st.done && !r.tie && r.rank <= q ? 'q' : ''}"><td>${r.rank}${r.tie ? '<span class="err">*</span>' : ''}</td><td class="n">${esc(r.team.name)}</td><td>${r.w}</td><td>${r.l}</td><td>${r.d}</td><td><b>${r.pt}</b></td></tr>`).join('')}</table>
+      ${st.tie ? '<div class="tie">* 勝敗・ポイント・直接対決で決まらない同率があります。「チーム」タブの「順位調整」に 1, 2 … と入れると、その順で並びます。</div>' : ''}</div>`;
+  }).join('');
+  const fm = ev.matches.filter(m => m.type === '本戦');
+  const fin = fm.map(m => `<tr><td><b>${esc(m.id)}</b></td><td>${esc(m.group)}</td><td>${esc(refName(V.resolve(m.red)))}</td><td>vs</td><td>${esc(refName(V.resolve(m.blue)))}</td></tr>`).join('');
+  return `<div class="standings">${cards}</div>
+    <div class="card" style="margin-top:16px"><h2>本戦の組み合わせ <small>予選の結果から自動で入ります</small></h2><table class="ed">${fin}</table></div>`;
+}
+
+function screenAdd(e, m) {
+  const cur = (e.screen.matches || []).map(id => e.matches.find(x => x.id === id)).filter(Boolean);
+  let keep = cur.filter(x => x.type === m.type && String(x.stage) !== String(m.stage) && x.id !== m.id);
+  if (m.type === '本戦') keep = [];
+  e.screen.matches = [...keep.slice(-1).map(x => x.id), m.id];
+  e.screen.mode = 'battle';
+}
+
+async function act(a, el) {
+  const id = el.dataset.id;
+  const find = e => e.matches.find(x => x.id === id);
+  if (a === 'mode') return save(e => { e.screen.mode = el.dataset.v; });
+  if (a === 'league') return save(e => { e.screen.league = el.dataset.v; });
+  if (a === 'filter') { filter = el.dataset.v; LS.set('bj_admin_filter', filter); return render(true); }
+  if (a === 'autoshow') { autoShow = el.checked; LS.set('bj_autoshow', autoShow); return; }
+  if (a === 'unshow') return save(e => { e.screen.matches = e.screen.matches.filter(x => x !== id); });
+  if (a === 'show') return save(e => {
+    const m = find(e); if (!m) return;
+    if (e.screen.matches.includes(id) && e.screen.mode === 'battle') e.screen.matches = e.screen.matches.filter(x => x !== id);
+    else { e.screen.matches = [...e.screen.matches.filter(x => x !== id), id].slice(-2); e.screen.mode = 'battle'; }
+  });
+  if (a === 'start') {
+    const m = V.matchById[id];
+    const js = judgesFor(m, ev);
+    if (!js.length) return toast('この試合の審査員が決まっていません（「審査員」タブで担当を選んでください）', true);
+    const r = V.resolve(m.red), b = V.resolve(m.blue);
+    if ((!r.team || !b.team) && !confirm(`まだ対戦相手が確定していません（${refName(r)} vs ${refName(b)}）。採点を始めますか？`)) return;
+    return save(e => {
+      const x = find(e); if (!x || x.status !== '未開始') return;
+      x.status = '採点中';
+      e.live[x.id] = { round: x.round, judges: judgesFor(x, e) };
+      if (autoShow) screenAdd(e, x);
+    }, `${id} の採点を開始しました`);
+  }
+  if (a === 'reflect') {
+    const m = V.matchById[id], L = ev.live[id];
+    if (!L) return;
+    const sc = scores.filter(s => s.match === id && s.round === m.round && L.judges.includes(s.judge));
+    const missing = L.judges.filter(j => !sc.some(s => s.judge === j)).map(j => V.judgeById[j]?.name || j);
+    if (missing.length && !confirm(`まだ送信していない審査員がいます：${missing.join('、')}\nこのまま反映しますか？`)) return;
+    const t = tally(sc);
+    return save(e => {
+      const x = find(e); if (!x || x.status !== '採点中') return;
+      Object.assign(x, { status: '確定', redTotal: t.red, blueTotal: t.blue, winner: t.winner, scores: sc.map(s => ({ judge: s.judge, red: s.red, blue: s.blue })), at: Date.now() });
+      delete e.live[x.id];
+    }, `${id} を反映しました（${t.red} - ${t.blue}）`);
+  }
+  if (a === 'extra') {
+    if (!confirm(`${id} を延長（再採点）にします。今の結果は消えます。よろしいですか？`)) return;
+    return save(e => {
+      const x = find(e); if (!x) return;
+      Object.assign(x, { status: '採点中', round: x.round + 1, extra: (x.extra || 0) + 1, redTotal: null, blueTotal: null, winner: '', scores: [], at: null });
+      e.live[x.id] = { round: x.round, judges: judgesFor(x, e) };
+      if (autoShow) screenAdd(e, x);
+    }, `${id} を延長にしました`);
+  }
+  if (a === 'reset') {
+    if (!confirm(`${id} を「未開始」に戻します。採点・結果は消えます。よろしいですか？`)) return;
+    return save(e => {
+      const x = find(e); if (!x) return;
+      Object.assign(x, { status: '未開始', round: x.round + 1, extra: 0, redTotal: null, blueTotal: null, winner: '', scores: [], at: null });
+      delete e.live[x.id];
+    }, `${id} を未開始に戻しました`);
+  }
+  // ----- 登録系 -----
+  if (a === 'addTeam') return save(e => { e.teams.push({ id: uid('t'), name: '新しいチーム', org: '', photo: '', league: leaguesOf(e)[0] || 'A', adjust: '' }); });
+  if (a === 'delTeam') {
+    const t = V.teamById[id];
+    const used = ev.matches.some(m => m.red === id || m.blue === id);
+    if (!confirm(`「${t.name}」を削除しますか？${used ? '\n※対戦表で使われています。対戦表の作り直しが必要です。' : ''}`)) return;
+    if (t.photo?.startsWith('img:')) store.delImage(t.photo.slice(4)).catch(() => {});
+    return save(e => { e.teams = e.teams.filter(x => x.id !== id); });
+  }
+  if (a === 'addJudge') return save(e => { e.judges.push({ id: uid('j'), name: '新しい審査員', photo: '' }); });
+  if (a === 'delJudge') {
+    if (!confirm(`「${V.judgeById[id].name}」を削除しますか？`)) return;
+    return save(e => { e.judges = e.judges.filter(x => x.id !== id); for (const k of ['stage1Judges', 'stage2Judges', 'finalJudges']) e.settings[k] = e.settings[k].filter(x => x !== id); e.matches.forEach(m => (m.judges = (m.judges || []).filter(x => x !== id))); });
+  }
+  if (a === 'import') return importTeams(el.dataset.mode);
+  if (a === 'importJ') return importJudges();
+  if (a === 'pic') return pickImage(el.dataset.kind, id);
+  if (a === 'picUrl') { const u = prompt('画像のURL（Googleドライブの共有リンクも可。「リンクを知っている全員」に公開してください）'); if (u != null) return setImage(el.dataset.kind, id, u.trim()); return; }
+  if (a === 'picDel') return setImage(el.dataset.kind, id, '');
+  if (a === 'genLeague') {
+    const has = ev.matches.some(m => m.type === '予選' && m.status !== '未開始');
+    if (!confirm(`チーム表から予選の総当たり表を作り直します。今の予選の対戦表は置き換わります。${has ? '\n⚠ 結果が入っている試合も消えます。' : ''}`)) return;
+    return save(e => { e.matches.filter(m => m.type === '予選').forEach(m => delete e.live[m.id]); e.matches = [...genLeagueMatches(e), ...e.matches.filter(m => m.type !== '予選')]; }, '予選の対戦表を作りました');
+  }
+  if (a === 'genFinal') {
+    if (!confirm('本戦のトーナメント枠を作り直します（各リーグの上位が入る形）。今の本戦の対戦表は置き換わります。')) return;
+    return save(e => { e.matches.filter(m => m.type === '本戦').forEach(m => delete e.live[m.id]); e.matches = [...e.matches.filter(m => m.type !== '本戦'), ...genFinalMatches(e)]; }, '本戦の枠を作りました');
+  }
+  if (a === 'addMatch') return save(e => {
+    const type = el.dataset.type;
+    const base = type === '本戦' ? 'M' : (leaguesOf(e)[0] || 'A') + '-';
+    let n = 1; while (e.matches.some(m => m.id === base + n)) n++;
+    e.matches.push(newMatch({ id: base + n, type, group: type === '本戦' ? 'TOP8' : (leaguesOf(e)[0] || 'A'), stage: 1 }));
+  });
+  if (a === 'delMatch') { if (!confirm(`${id} を削除しますか？`)) return; return save(e => { e.matches = e.matches.filter(m => m.id !== id); delete e.live[id]; e.screen.matches = e.screen.matches.filter(x => x !== id); }); }
+  if (a === 'up' || a === 'down') return save(e => { const i = e.matches.findIndex(m => m.id === id), j = a === 'up' ? i - 1 : i + 1; if (i < 0 || j < 0 || j >= e.matches.length) return; [e.matches[i], e.matches[j]] = [e.matches[j], e.matches[i]]; });
+  if (a === 'jdef') { const k = el.dataset.k; return save(e => { const s = new Set(e.settings[k]); el.checked ? s.add(id) : s.delete(id); e.settings[k] = e.judges.map(j => j.id).filter(x => s.has(x)); }); }
+  if (a === 'pass') return changePass(el.dataset.k);
+  if (a === 'resetResults') {
+    if (!confirm('すべての試合の結果を消して「未開始」に戻します。チーム・審査員・設定は残ります。よろしいですか？')) return;
+    return save(e => { e.matches.forEach(x => Object.assign(x, { status: '未開始', round: x.round + 1, extra: 0, redTotal: null, blueTotal: null, winner: '', scores: [], at: null })); e.live = {}; e.screen.matches = []; }, '結果をリセットしました');
+  }
+  if (a === 'export') {
+    const blob = new Blob([JSON.stringify({ event: ev, images }, null, 1)], { type: 'application/json' });
+    const u = URL.createObjectURL(blob), l = document.createElement('a');
+    l.href = u; l.download = `judge-backup-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '')}.json`; l.click(); URL.revokeObjectURL(u);
+    return;
+  }
+  if (a === 'importJson') return $('#jsonFile').click();
+  if (a === 'demoReset') { if (confirm('デモのデータを初期状態に戻しますか？')) store.resetAll(); return; }
+}
+
+// ===================== チーム =====================
+function picCell(kind, id, ref) {
+  const src = imgSrc(ref, images);
+  return `<div class="pic ${src ? 'has' : ''}" data-act="pic" data-kind="${kind}" data-id="${esc(id)}" style="${src ? `background-image:url('${esc(src)}')` : ''}" title="クリックで画像を選ぶ">${src ? '' : '写真'}</div>
+    <div class="piclinks"><a data-act="picUrl" data-kind="${kind}" data-id="${esc(id)}">URL</a>${ref ? `<a data-act="picDel" data-kind="${kind}" data-id="${esc(id)}">削除</a>` : ''}</div>`;
+}
+function teamsTab() {
+  const rows = ev.teams.map(t => `<tr>
+    <td style="width:70px">${picCell('team', t.id, t.photo)}</td>
+    <td><input type="text" data-ed="team" data-id="${esc(t.id)}" data-f="name" value="${esc(t.name)}"></td>
+    <td><input type="text" data-ed="team" data-id="${esc(t.id)}" data-f="org" value="${esc(t.org)}"></td>
+    <td style="width:90px"><input type="text" data-ed="team" data-id="${esc(t.id)}" data-f="league" value="${esc(t.league)}" maxlength="1" style="text-transform:uppercase;text-align:center"></td>
+    <td style="width:90px"><input type="number" data-ed="team" data-id="${esc(t.id)}" data-f="adjust" value="${esc(t.adjust)}" placeholder="-"></td>
+    <td style="width:60px"><button class="btn sm" data-act="delTeam" data-id="${esc(t.id)}">削除</button></td></tr>`).join('');
+  const cnt = V.leagues.map(L => `${L}:${ev.teams.filter(t => t.league === L).length}`).join(' / ');
+  return `<div class="card"><h2>チーム <small>${ev.teams.length}チーム（${cnt || 'リーグ未設定'}）・入力すると自動で保存されます</small></h2>
+    <table class="ed"><tr><th>写真</th><th>チーム名</th><th>所属団体</th><th>リーグ</th><th>順位調整</th><th></th></tr>${rows}</table>
+    <div class="row" style="margin-top:12px"><button class="btn" data-act="addTeam">＋ チームを追加</button></div>
+    <p class="hint">リーグは A, B, C… の1文字。順位調整は、勝敗・ポイント・直接対決でも同率のときだけ使います（小さい数字が上位）。<br>写真はクリックで画像ファイルを選ぶか、「URL」から Googleドライブ等のリンクを入れられます。写真が無いときは頭文字で表示します。</p></div>
+    <div class="card"><h2>スプレッドシートから貼り付け <small>列の順番：チーム名 ／ 所属団体 ／ リーグ ／ 写真URL（任意）</small></h2>
+    <textarea id="paste" placeholder="スプシで範囲を選んでコピー → ここに貼り付け&#10;FLOW MASTERS	スタジオ ノース	A&#10;NEXT LEVEL	ダンススクール WEST	A"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn pri" data-act="import" data-mode="append">下に追加する</button><button class="btn" data-act="import" data-mode="replace">今のチームと置き換える</button></div></div>`;
+}
+function parseTsv(txt) {
+  return txt.split(/\r?\n/).map(l => l.split('\t').map(s => s.trim())).filter(c => c[0]).filter(c => !/^(チーム名|名前|team)$/i.test(c[0]));
+}
+function importTeams(mode) {
+  const rows = parseTsv($('#paste').value);
+  if (!rows.length) return toast('貼り付けた内容が読めませんでした', true);
+  if (mode === 'replace' && !confirm(`今のチームを消して ${rows.length} チームに置き換えます。対戦表の作り直しが必要です。よろしいですか？`)) return;
+  return save(e => {
+    const add = rows.map(c => ({ id: uid('t'), name: c[0], org: c[1] || '', league: (c[2] || '').toUpperCase().slice(0, 1), photo: c[3] || '', adjust: '' }));
+    e.teams = mode === 'replace' ? add : [...e.teams, ...add];
+  }, `${rows.length} チームを取り込みました`);
+}
+
+// ===================== 審査員 =====================
+function judgesTab() {
+  const S = ev.settings;
+  const cb = (k, id) => `<input type="checkbox" class="cb" data-act="jdef" data-k="${k}" data-id="${esc(id)}" ${S[k].includes(id) ? 'checked' : ''}>`;
+  const rows = ev.judges.map(j => `<tr><td style="width:70px">${picCell('judge', j.id, j.photo)}</td>
+    <td><input type="text" data-ed="judge" data-id="${esc(j.id)}" data-f="name" value="${esc(j.name)}"></td>
+    <td style="text-align:center">${cb('stage1Judges', j.id)}</td><td style="text-align:center">${cb('stage2Judges', j.id)}</td><td style="text-align:center">${cb('finalJudges', j.id)}</td>
+    <td style="width:60px"><button class="btn sm" data-act="delJudge" data-id="${esc(j.id)}">削除</button></td></tr>`).join('');
+  const n = k => S[k].length;
+  return `<div class="card"><h2>審査員 <small>チェックを入れたところの担当になります（試合ごとに変えたいときは「対戦表」タブ）</small></h2>
+    <table class="ed"><tr><th>写真</th><th>名前（スクリーンに出ます）</th><th style="text-align:center">予選 ${esc(S.stage1Name)}<br>${n('stage1Judges')}名</th><th style="text-align:center">予選 ${esc(S.stage2Name)}<br>${n('stage2Judges')}名</th><th style="text-align:center">本戦<br>${n('finalJudges')}名</th><th></th></tr>${rows}</table>
+    <div class="row" style="margin-top:12px"><button class="btn" data-act="addJudge">＋ 審査員を追加</button></div>
+    <p class="hint">審査員はスマホで <b>judge.html</b> を開き、自分の名前を選んでログインします。担当の試合が「採点開始」になると、自動で採点画面に切り替わります。</p></div>
+    <div class="card"><h2>まとめて追加 <small>1行に1人の名前</small></h2><textarea id="pasteJ" placeholder="Kouske&#10;Kazuki Roc&#10;Steez"></textarea>
+    <div class="row" style="margin-top:10px"><button class="btn pri" data-act="importJ">追加する</button></div></div>`;
+}
+function importJudges() {
+  const names = $('#pasteJ').value.split(/\r?\n/).map(s => s.split('\t')[0].trim()).filter(Boolean);
+  if (!names.length) return;
+  return save(e => { names.forEach(n => e.judges.push({ id: uid('j'), name: n, photo: '' })); }, `${names.length} 名を追加しました`);
+}
+
+// ===================== 対戦表 =====================
+function matchesTab() {
+  const S = ev.settings;
+  const teamOpts = sel => `<option value="">（未定）</option>` + ev.teams.map(t => `<option value="${esc(t.id)}" ${t.id === sel ? 'selected' : ''}>${esc(t.league ? `[${t.league}] ` : '')}${esc(t.name)}</option>`).join('');
+  const refList = [...V.leagues.flatMap(L => Array.from({ length: Math.max(+S.qualify || 2, ev.teams.filter(t => t.league === L).length) }, (_, i) => `${L}${i + 1}位`)), ...ev.matches.filter(m => m.type === '本戦').flatMap(m => [`勝者:${m.id}`, `敗者:${m.id}`]), ...ev.teams.map(t => t.name)];
+  const row = (m, i) => {
+    const lock = m.status !== '未開始';
+    const jNames = (m.judges || []).map(id => V.judgeById[id]?.name || id).join(', ');
+    const def = judgesFor({ ...m, judges: [] }, ev).map(id => V.judgeById[id]?.name || id).join(', ');
+    const sideIn = c => m.type === '予選'
+      ? `<select data-ed="match" data-id="${esc(m.id)}" data-f="${c}">${teamOpts(m[c])}</select>`
+      : `<input type="text" list="refs" data-ed="match" data-id="${esc(m.id)}" data-f="${c}" value="${esc(m[c])}" placeholder="例：A1位 / 勝者:QF1">`;
+    return `<tr class="${lock ? 'dis' : ''}">
+      <td style="width:90px"><input type="text" data-ed="match" data-id="${esc(m.id)}" data-f="id" value="${esc(m.id)}" ${lock ? 'disabled' : ''}></td>
+      <td style="width:90px"><input type="text" data-ed="match" data-id="${esc(m.id)}" data-f="group" value="${esc(m.group)}" title="${m.type === '予選' ? 'リーグ（A, B…）' : 'ラウンド名（TOP8 / TOP4 / FINAL / 3位決定戦 など）'}"></td>
+      <td style="width:80px">${m.type === '予選' ? `<select data-ed="match" data-id="${esc(m.id)}" data-f="stage"><option value="1" ${+m.stage === 1 ? 'selected' : ''}>1</option><option value="2" ${+m.stage === 2 ? 'selected' : ''}>2</option></select>` : '-'}</td>
+      <td style="border-left:4px solid var(--red)">${sideIn('red')}</td>
+      <td style="border-left:4px solid var(--blue)">${sideIn('blue')}</td>
+      <td><input type="text" data-ed="match" data-id="${esc(m.id)}" data-f="judges" value="${esc(jNames)}" placeholder="${esc(def || '審査員タブの担当')}"></td>
+      <td style="white-space:nowrap"><span class="st s-${m.status}">${m.status}</span></td>
+      <td style="white-space:nowrap"><button class="btn sm" data-act="up" data-id="${esc(m.id)}">↑</button><button class="btn sm" data-act="down" data-id="${esc(m.id)}">↓</button> <button class="btn sm" data-act="delMatch" data-id="${esc(m.id)}">削除</button></td></tr>`;
+  };
+  const head = `<tr><th>試合ID</th><th>グループ</th><th>ステージ</th><th>赤コーナー</th><th>青コーナー</th><th>審査員（空欄＝担当どおり）</th><th>状態</th><th></th></tr>`;
+  const pre = ev.matches.filter(m => m.type === '予選'), fin = ev.matches.filter(m => m.type === '本戦');
+  return `<datalist id="refs">${refList.map(r => `<option value="${esc(r)}">`).join('')}</datalist>
+    <div class="card"><h2>予選（リーグ総当たり） <small>${pre.length} 試合・上から順に進行</small></h2>
+    <div class="row" style="margin-bottom:12px"><button class="btn pri" data-act="genLeague">チーム表から総当たりを自動作成</button><button class="btn" data-act="addMatch" data-type="予選">＋ 試合を追加</button></div>
+    <table class="ed">${head}${pre.map(row).join('')}</table>
+    <p class="hint">自動作成では、A・C リーグを ${esc(S.stage1Name)}、B・D リーグを ${esc(S.stage2Name)} に振り分け、同じチームが連続しにくい順番にします。審査員を試合ごとに変えたいときは、名前をカンマ区切りで入れてください。</p></div>
+    <div class="card"><h2>本戦（トーナメント） <small>${fin.length} 試合</small></h2>
+    <div class="row" style="margin-bottom:12px"><button class="btn pri" data-act="genFinal">トーナメント枠を自動作成</button><button class="btn" data-act="addMatch" data-type="本戦">＋ 試合を追加</button></div>
+    <table class="ed">${head}${fin.map(row).join('')}</table>
+    <p class="hint">赤・青には「<b>A1位</b>」（Aリーグ1位）、「<b>勝者:QF1</b>」（QF1の勝者）、「敗者:SF1」、またはチーム名を入れます。予選が全試合終わると、順位どおりに自動で入ります。<br>
+    自動作成（4リーグ×上位2）の配置：QF1＝A1位 vs B2位 ／ QF2＝C1位 vs D2位 ／ QF3＝B1位 vs A2位 ／ QF4＝D1位 vs C2位。事前に決まっている配置に合わせて書き換えてください。3位決定戦を入れる場合は、グループ名を「3位決定戦」にすると決勝の下に表示されます。</p></div>`;
+}
+
+// ===================== 表示・設定 =====================
+function settingsTab() {
+  const S = ev.settings;
+  const tx = (f, l, ph = '') => `<label>${l}</label><input type="text" data-ed="set" data-f="${f}" value="${esc(S[f])}" placeholder="${esc(ph)}">`;
+  const sel = (f, l, opts, h = '') => `<label>${l}</label><div class="row"><select data-ed="set" data-f="${f}" style="padding:9px 10px;border:1px solid var(--line);border-radius:8px;min-width:260px">${opts.map(([v, t]) => `<option value="${v}" ${S[f] === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${h ? `<span class="hint">${h}</span>` : ''}</div>`;
+  const col = (f, l) => `<label>${l}</label><div class="row"><input type="color" data-ed="set" data-f="${f}" value="${esc(S[f])}"><span class="muted">${esc(S[f])}</span></div>`;
+  const img = (f, l, h) => { const src = imgSrc(S[f], images); return `<label>${l}</label><div class="imgset"><div class="prev" style="${src ? `background-image:url('${esc(src)}')` : ''}"></div><button class="btn sm" data-act="pic" data-kind="${f}">画像を選ぶ</button><button class="btn sm" data-act="picUrl" data-kind="${f}">URLで指定</button>${S[f] ? `<button class="btn sm" data-act="picDel" data-kind="${f}">外す</button>` : ''}<span class="hint">${h}</span></div>`; };
+  return `<div class="card"><h2>スクリーンの見た目</h2><div class="form">
+    ${tx('eventName', 'イベント名')}${tx('subtitle', 'サブタイトル', '例：1vs1 Junior B-Girl')}
+    ${img('logo', 'ロゴ', '背景が透明なPNGがおすすめ。無ければイベント名を文字で表示')}
+    ${img('bg', '背景画像', '1920×1080 推奨。無ければ背景色')}
+    ${sel('bgPreset', '背景デザイン', [['rope', 'ロープ（2本のロープが回る）'], ['glow', '光（赤・青のグロー）'], ['grid', 'グリッド'], ['dots', 'ドット'], ['none', 'なし（背景色だけ）']], '背景画像を入れた場合は画像が優先')}
+    ${sel('photoFallback', '写真が無いとき', [['none', '何も出さない'], ['initial', 'チーム名の頭文字を出す']])}
+    ${sel('barStyle', '名前バーの形', [['slant', '斜め'], ['square', '四角（and8風）']])}
+    ${sel('font', 'フォント', [['heavy', '極太（Anton＋デラゴシック）'], ['standard', 'スタンダード（Oswald）'], ['street', 'ストリート（手書き風）'], ['pop', 'ポップ（丸み・キッズ向け）']])}
+    ${col('bgColor', '背景色')}${col('red', '赤コーナーの色')}${col('blue', '青コーナーの色')}
+    ${tx('stage1Name', 'ステージ1の名前')}${tx('stage2Name', 'ステージ2の名前')}${tx('prelimLabel', '予選の呼び方', '予選')}
+    <label>所属団体を表示</label><div><input type="checkbox" class="cb" data-ed="set" data-f="showOrg" ${S.showOrg ? 'checked' : ''}></div>
+  </div></div>
+  <div class="card"><h2>ルール</h2><div class="form">
+    <label>持ち点（1人あたり）</label><div class="row"><input type="number" min="1" max="20" data-ed="set" data-f="points" value="${S.points}" style="width:90px"> 点</div>
+    <label>持ち点をすべて振り分ける</label><div class="row"><input type="checkbox" class="cb" data-ed="set" data-f="mustUseAll" ${S.mustUseAll ? 'checked' : ''}><span class="hint">オンだと 3-0 / 2-1 / 1-2 / 0-3 のどれかになり、審査員が奇数なら引き分けが起きません</span></div>
+    <label>各リーグの本戦進出数</label><div class="row"><input type="number" min="1" max="8" data-ed="set" data-f="qualify" value="${S.qualify}" style="width:90px"> 位まで</div>
+  </div><p class="hint">順位の決め方：①勝ち数 → ②獲得ポイント合計 → ③直接対決 → ④チームの「順位調整」</p></div>
+  <div class="card"><h2>パスワード</h2><div class="row"><button class="btn" data-act="pass" data-k="adminPass">管理パスワードを変更</button><button class="btn" data-act="pass" data-k="judgePass">審査員パスワードを確認・変更</button></div></div>
+  <div class="card"><h2>データ</h2><div class="row">
+    <button class="btn" data-act="export">バックアップを書き出す（JSON）</button><button class="btn" data-act="importJson">バックアップから戻す</button>
+    <button class="btn warn" data-act="resetResults">結果をすべてリセット</button>${DEMO ? '<button class="btn warn" data-act="demoReset">デモを初期状態に戻す</button>' : ''}</div>
+    <p class="hint">リハーサルのあとは「結果をすべてリセット」で本番前の状態に戻せます。</p></div>`;
+}
+async function changePass(k) {
+  try {
+    const cur = await store.getSecret();
+    const v = prompt(k === 'adminPass' ? '新しい管理パスワード（4文字以上）' : `審査員パスワード（いま：${cur.judgePass || 'なし'}）\n空欄にするとパスワード無しになります`, k === 'judgePass' ? (cur.judgePass || '') : '');
+    if (v == null) return;
+    if (k === 'adminPass' && v.length < 4) return toast('4文字以上にしてください', true);
+    await store.setSecret({ [k]: v });
+    toast('変更しました');
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---------- 画像 ----------
+let picTarget = null;
+function pickImage(kind, id) { picTarget = { kind, id }; $('#file').value = ''; $('#file').click(); }
+$('#file').onchange = async () => {
+  const f = $('#file').files[0]; if (!f || !picTarget) return;
+  const { kind, id } = picTarget;
+  try {
+    toast('画像を保存しています…');
+    const data = await fileToDataUrl(f, kind === 'bg' ? { max: 1920 } : kind === 'logo' ? { max: 900, alpha: true } : { max: 600 });
+    const imgId = uid('p');
+    await store.putImage(imgId, data);
+    await setImage(kind, id, 'img:' + imgId);
+  } catch (e) { toast(e.message || '画像を読み込めませんでした', true); }
+};
+async function setImage(kind, id, ref) {
+  let old = '';
+  await save(e => {
+    if (kind === 'team') { const t = e.teams.find(x => x.id === id); old = t.photo; t.photo = ref; }
+    else if (kind === 'judge') { const j = e.judges.find(x => x.id === id); old = j.photo; j.photo = ref; }
+    else { old = e.settings[kind]; e.settings[kind] = ref; }
+  }, '保存しました');
+  if (old && old.startsWith('img:') && old !== ref) store.delImage(old.slice(4)).catch(() => {});
+}
+$('#jsonFile').onchange = async () => {
+  const f = $('#jsonFile').files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d.event || !confirm('バックアップの内容で、今のデータをすべて置き換えます。よろしいですか？')) return;
+    for (const [k, v] of Object.entries(d.images || {})) await store.putImage(k, v);
+    await save(e => { Object.keys(e).forEach(k => delete e[k]); Object.assign(e, normalizeEvent(d.event)); }, '読み込みました');
+  } catch (e) { toast('読み込めませんでした：' + e.message, true); }
+};
+
+// ---------- 入力の保存 ----------
+function parseJudges(txt, e) {
+  return String(txt).split(/[,、\n]+/).map(s => s.trim()).filter(Boolean).map(s => (e.judges.find(j => j.id === s || j.name === s) || {}).id).filter(Boolean);
+}
+document.addEventListener('change', e => {
+  const el = e.target.closest('[data-ed]'); if (!el) return;
+  const kind = el.dataset.ed, id = el.dataset.id, f = el.dataset.f;
+  let v = el.type === 'checkbox' ? el.checked : el.value;
+  if (kind === 'set') {
+    if (f === 'points' || f === 'qualify') v = Math.max(1, parseInt(v) || 1);
+    return save(x => { x.settings[f] = v; }, '保存しました');
+  }
+  if (kind === 'team') {
+    if (f === 'league') v = String(v).toUpperCase().slice(0, 1);
+    if (f === 'adjust') v = v === '' ? '' : +v;
+    return save(x => { const t = x.teams.find(t => t.id === id); if (t) t[f] = v; }, '保存しました');
+  }
+  if (kind === 'judge') return save(x => { const j = x.judges.find(j => j.id === id); if (j) j[f] = v; }, '保存しました');
+  if (kind === 'match') {
+    if (f === 'id') {
+      v = String(v).trim();
+      if (!v || ev.matches.some(m => m.id === v)) { toast('その試合IDは使えません（空欄か重複）', true); return render(true); }
+      return save(x => {
+        const m = x.matches.find(m => m.id === id); if (!m) return;
+        m.id = v;
+        x.matches.forEach(o => ['red', 'blue'].forEach(c => { o[c] = String(o[c] || '').replace(new RegExp(`^(勝者|敗者)\\s*[:：]?\\s*${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), `$1:${v}`); }));
+        x.screen.matches = x.screen.matches.map(s => (s === id ? v : s));
+      }, '保存しました');
+    }
+    return save(x => {
+      const m = x.matches.find(m => m.id === id); if (!m) return;
+      if (f === 'judges') m.judges = parseJudges(v, x);
+      else if (f === 'stage') m.stage = +v;
+      else if (f === 'group') m.group = m.type === '予選' ? String(v).toUpperCase() : v;
+      else m[f] = String(v).trim();
+    }, '保存しました');
+  }
+});
+document.addEventListener('click', e => {
+  const pv = e.target.closest('[data-pv]');
+  if (pv) { $$('[data-pv]').forEach(b => b.classList.toggle('on', b === pv)); $('#pvf').src = `screen.html?view=${pv.dataset.pv}&sample=1${location.search.includes('demo') ? '&demo' : ''}`; return; }
+  const t = e.target.closest('[data-tab]');
+  if (t) { tab = t.dataset.tab; LS.set('bj_admin_tab', tab); return render(true); }
+  const a = e.target.closest('[data-act]');
+  if (a && a.tagName !== 'INPUT') act(a.dataset.act, a);
+});
+document.addEventListener('change', e => { const a = e.target.closest('input[data-act]'); if (a) act(a.dataset.act, a); });
+
+// ---------- 入口 ----------
+if (!(await store.exists())) setupGate();
+else if (!(await store.isAdmin())) loginGate();
+else start();
+</script>
+</body>
+</html>

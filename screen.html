@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>スクリーン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Noto+Sans+JP:wght@500;700;900&family=Anton&family=Dela+Gothic+One&family=Permanent+Marker&family=Yusei+Magic&family=Rubik:wght@700;800&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+<style>
+  :root { --red: #e60023; --blue: #0b57a4; --bgc: #000; --fd: 'Oswald', 'Noto Sans JP', sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color: #fff; font-family: 'Noto Sans JP', sans-serif; }
+  body.idle { cursor: none; }
+  #stage { font-synthesis: none; position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; background: var(--bgc); overflow: hidden; }
+  #bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
+  #fx { position: absolute; inset: 0; overflow: hidden; }
+  #fx svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .fx-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 80% at -5% 55%, color-mix(in srgb, var(--red) 55%, transparent), transparent 70%), radial-gradient(ellipse 60% 80% at 105% 55%, color-mix(in srgb, var(--blue) 60%, transparent), transparent 70%); }
+  .fx-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px); background-size: 64px 64px; -webkit-mask-image: radial-gradient(ellipse at 50% 45%, #000 20%, transparent 75%); mask-image: radial-gradient(ellipse at 50% 45%, #000 20%, transparent 75%); }
+  .fx-dots { position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,.16) 2px, transparent 2.5px); background-size: 26px 26px; -webkit-mask-image: linear-gradient(115deg, #000, transparent 45%, transparent 55%, #000); mask-image: linear-gradient(115deg, #000, transparent 45%, transparent 55%, #000); }
+  .fx-vig { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,.55)); }
+
+  /* ===== 斜めスタイル ===== */
+  #stage.slant .namebar { transform: skewX(-12deg); }
+  #stage.slant .blue .namebar { transform: skewX(12deg); }
+  #stage.slant .namebar > * { transform: skewX(12deg); }
+  #stage.slant .blue .namebar > * { transform: skewX(-12deg); }
+  #stage.slant .red .namebar { align-self: flex-start; width: calc(100% + 70px); margin-left: -70px; }
+  #stage.slant .blue .namebar { align-self: flex-end; width: calc(100% + 70px); margin-right: -70px; }
+  #stage.slant .score { transform: skewX(-12deg); border-radius: 6px 6px 0 0; }
+  #stage.slant .blue .score { transform: skewX(12deg); }
+  #stage.slant .score span { display: block; transform: skewX(12deg); }
+  #stage.slant .blue .score span { transform: skewX(-12deg); }
+  #stage.slant .red .score { right: 14px; } #stage.slant .blue .score { left: 14px; }
+  #stage.slant .half .red .score { right: 10px; } #stage.slant .half .blue .score { left: 10px; }
+  #stage.slant .vs { font-style: italic; }
+  #stage.slant .jc { transform: skewX(-12deg); }
+  #stage.slant .jc > * { transform: skewX(12deg); }
+  #stage.slant .banner { transform: skewX(-12deg); margin-left: 60px; margin-right: 60px; margin-bottom: 26px; }
+  #stage.slant .banner > span { display: block; transform: skewX(12deg); }
+  #stage.slant .half .banner { margin-left: 30px; margin-right: 30px; }
+  #stage.slant .lg-h { clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%); }
+  #stage.slant .lt tr.q td.rk { clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+  #stage.slant .tm { transform: skewX(-8deg); }
+  #stage.slant .slot .nm, #stage.slant .slot .ts, #stage.slant .slot .mini { transform: skewX(8deg); }
+  .F { font-family: var(--fd); }
+  .demo { position: absolute; right: 12px; bottom: 8px; font-size: 16px; color: #ffd84d; opacity: .6; z-index: 50; }
+
+  /* ===== ヘッダー ===== */
+  .top { position: absolute; left: 0; right: 0; top: 0; height: 190px; display: flex; align-items: center; justify-content: space-between; padding: 0 110px; z-index: 2; }
+  .lbl { width: 620px; font-family: var(--fd); font-weight: 500; font-size: 34px; padding-bottom: 6px; border-bottom: 2px solid rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 52px; }
+  .lbl.r { text-align: right; }
+  .lbl:empty { border-color: transparent; }
+  .logo { flex: 1; height: 160px; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .logo img { max-height: 184px; max-width: 460px; object-fit: contain; margin-top: 6px; }
+  .logo .t { font-family: var(--fd); font-weight: 700; font-size: 54px; line-height: 1.05; letter-spacing: .02em; }
+  .logo .s { font-family: var(--fd); font-size: 26px; opacity: .8; letter-spacing: .12em; }
+
+  /* ===== バトル ===== */
+  .battle { position: absolute; left: 0; right: 0; top: 190px; bottom: 0; display: flex; flex-direction: column; }
+  .b-label { display: none; }
+  .b-main { display: flex; align-items: flex-end; height: 520px; }
+  .side { width: 820px; flex: none; display: flex; flex-direction: column; align-items: center; position: relative; transition: opacity .4s; }
+  .side.lose { opacity: .45; }
+  /* 写真はまっすぐな長方形。切り抜かずに全体を表示し、名前バーの上に下揃え（背景透過の画像もそのまま乗る） */
+  .ph { width: 400px; height: 380px; display: grid; place-items: end center; }
+  .ph img { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
+  .ph .ini { width: 100%; height: 100%; display: grid; place-items: center; font-family: var(--fd); font-weight: 700; font-size: 190px; color: rgba(255,255,255,.9); }
+  .red .ph .ini { background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--red) 55%, #000), #0a0a0a 75%); }
+  .blue .ph .ini { background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--blue) 60%, #000), #0a0a0a 75%); }
+  .namebar { width: 100%; height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 40px; }
+  .fin.red .namebar { padding-right: 160px; } .fin.blue .namebar { padding-left: 160px; }
+  .red .namebar { background: color-mix(in srgb, var(--red) 32%, #000); border-bottom: 8px solid var(--red); border-right: 8px solid var(--red); }
+  .blue .namebar { background: color-mix(in srgb, var(--blue) 32%, #000); border-bottom: 8px solid var(--blue); border-left: 8px solid var(--blue); }
+  .name { font-family: var(--fd); font-weight: 600; font-size: 62px; line-height: 1.1; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .name.ph-l { font-family: 'Noto Sans JP', sans-serif; color: rgba(255,255,255,.55); font-weight: 700; }
+  .org { font-size: 24px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .score { position: absolute; bottom: 130px; width: 136px; height: 136px; display: grid; place-items: center; font-family: var(--fd); font-weight: 700; font-size: 112px; line-height: 1; border-radius: 18px 18px 0 0; }
+  .red .score { right: 0; background: var(--red); }
+  .blue .score { left: 0; background: var(--blue); }
+  .vs { flex: 1; height: 130px; display: grid; place-items: center; font-family: var(--fd); font-weight: 600; font-size: 120px; }
+  /* 審査員カード：数字は白、どちらに入れたかは矢印（◀赤／青▶）とカード下の線だけで示す */
+  .jrow { display: grid; gap: 18px; margin: 50px 70px 0; }
+  .jc { background: rgba(18,18,22,.88); border: 1px solid rgba(255,255,255,.14); border-bottom: 6px solid rgba(255,255,255,.14); padding: 10px 10px 8px; text-align: center; min-width: 0; }
+  .jc.vr { border-bottom-color: var(--red); } .jc.vb { border-bottom-color: var(--blue); }
+  .jname { font-family: var(--fd); font-weight: 700; font-size: 30px; color: rgba(255,255,255,.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .jv { display: flex; align-items: center; justify-content: center; gap: 22px; height: 84px; font-family: var(--fd); font-weight: 700; font-size: 70px; line-height: 1; }
+  .jv b { font-weight: inherit; min-width: 50px; } .jv b.lo { color: rgba(255,255,255,.3); }
+  .jv i { font-style: normal; font-size: 40px; }
+  .jv i.r { color: var(--red); } .jv i.b { color: var(--blue); } .jv i.e { color: rgba(255,255,255,.4); }
+  .jv.wait { color: rgba(255,255,255,.2); font-size: 40px; }
+  .banner { margin-top: auto; height: 116px; background: #fff; color: #000; display: grid; place-items: center; font-family: var(--fd); font-weight: 600; font-size: 60px; letter-spacing: .03em; white-space: nowrap; overflow: hidden; }
+  .banner .wt { display: inline-block; font-size: .5em; letter-spacing: .14em; color: #fff; padding: 6px 18px; margin-right: 28px; vertical-align: middle; position: relative; top: -.15em; }
+  .banner.red .wt { background: var(--red); } .banner.blue .wt { background: var(--blue); }
+  .banner .dots::after { content: ''; animation: dots 1.6s steps(4) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+  /* 2バトル同時 */
+  .duo { position: absolute; left: 0; right: 0; top: 150px; bottom: 0; display: flex; gap: 0; }
+  .duo .battle { position: relative; top: 0; flex: 1; }
+  .duo .battle + .battle { border-left: 3px solid rgba(255,255,255,.25); }
+  .half .b-label { display: block; text-align: center; font-family: var(--fd); font-size: 34px; padding: 6px 0 18px; }
+  .half .b-label b { font-weight: 600; margin-right: 18px; }
+  .half .b-label span { opacity: .75; }
+  .half .b-main { height: 400px; }
+  .half .side { width: 395px; }
+  .half .ph { width: 300px; height: 270px; }
+  .half .ph .ini { font-size: 130px; }
+  .half .namebar { height: 104px; padding: 0 16px; }
+  .half .fin.red .namebar { padding-right: 104px; } .half .fin.blue .namebar { padding-left: 104px; }
+  .half .name { font-size: 38px; }
+  .half .org { font-size: 18px; }
+  .half .score { bottom: 104px; width: 92px; height: 92px; font-size: 74px; border-radius: 14px 14px 0 0; }
+  .half .vs { height: 104px; font-size: 64px; }
+  .half .jrow { margin: 36px 30px 0; gap: 10px; }
+  .half .jname { font-size: 20px; }
+  .half .jv { height: 60px; font-size: 48px; gap: 12px; } .half .jv i { font-size: 28px; } .half .jv b { min-width: 32px; } .half .jv.wait { font-size: 30px; }
+  .half .banner { height: 96px; font-size: 42px; }
+
+  /* 結果発表アニメーション */
+  @keyframes open { from { clip-path: inset(0 50% 0 50%); } to { clip-path: inset(0 0 0 0); } }
+  @keyframes popIn { from { transform: scale(0); } 70% { transform: scale(1.12); } to { transform: scale(1); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+  @keyframes dim { from { opacity: 1; } to { opacity: .45; } }
+  .anim .jc.res .jv { animation: popIn .45s both; animation-delay: var(--d); }
+  .anim .jc.res { animation: lineIn .45s both; animation-delay: var(--d); }
+  @keyframes lineIn { from { border-bottom-color: rgba(255,255,255,.14); } }
+  .anim .score { animation: popIn .5s both; animation-delay: var(--d2); }
+  .anim .banner { animation: fadeUp .6s both; animation-delay: var(--d3); }
+  .anim .side.lose { animation: dim .6s both; animation-delay: var(--d3); }
+
+  /* ===== リーグ表 ===== */
+  .leagues { position: absolute; left: 60px; right: 60px; top: 205px; bottom: 40px; display: grid; gap: 28px 36px; }
+  .lg { background: rgba(14,14,16,.82); border: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; overflow: hidden; }
+  .lg-h { display: flex; align-items: center; justify-content: space-between; padding: 0 22px; height: 60px; background: #fff; color: #000; }
+  .lg-h b { font-family: var(--fd); font-size: 38px; font-weight: 700; letter-spacing: .04em; }
+  .lg-h span { font-family: var(--fd); font-size: 22px; font-weight: 600; }
+  .lg-h span.fix { background: #000; color: #fff; padding: 2px 12px; }
+  .lt { width: 100%; border-collapse: collapse; }
+  .lt th { font-family: var(--fd); font-weight: 500; font-size: 18px; color: rgba(255,255,255,.55); text-align: center; padding: 6px 4px 2px; }
+  .lt td { padding: 3px 4px; border-top: 1px solid rgba(255,255,255,.1); text-align: center; font-family: var(--fd); font-size: 34px; }
+  .lt td.rk { width: 66px; font-size: 38px; font-weight: 700; }
+  .lt td.tm { text-align: left; }
+  .lt tr.q td.rk { background: #fff; color: #000; }
+  .tmw { display: flex; align-items: center; gap: 14px; }
+  .tmw .mini { width: 52px; height: 52px; flex: none; background: center/contain no-repeat; display: grid; place-items: center; font-family: var(--fd); font-size: 28px; }
+  .tmw .nm { font-family: var(--fd); font-weight: 600; font-size: 30px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
+  .tmw .og { font-family: 'Noto Sans JP', sans-serif; font-size: 16px; opacity: .65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
+  .tag { font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 700; padding: 1px 8px; margin-left: 8px; vertical-align: middle; background: #ffd84d; color: #000; }
+  .lr { margin-top: auto; padding: 6px 18px 10px; display: grid; gap: 2px; border-top: 1px solid rgba(255,255,255,.12); }
+  .lr div { display: grid; grid-template-columns: 1fr 150px 1fr; align-items: center; font-family: var(--fd); font-size: 21px; line-height: 1.35; gap: 10px; }
+  .lr div > span:first-child { text-align: right; } .lr .sc { text-align: center; font-weight: 700; }
+  .lr .sc i { font-style: normal; display: inline-block; min-width: 44px; padding: 0 6px; }
+  .lr .sc i.r { background: var(--red); } .lr .sc i.b { background: var(--blue); }
+  .lr .w { font-weight: 700; } .lr .l { opacity: .5; }
+  .lr .live { color: #ffd84d; font-size: 18px; }
+  .lr .nx { opacity: .45; font-size: 18px; }
+  .leagues.single { left: 330px; right: 330px; top: 230px; bottom: 60px; }
+  .single .lg { zoom: 1.45; }
+
+  /* ===== トーナメント ===== */
+  .tour { position: absolute; left: 40px; right: 40px; top: 200px; bottom: 40px; }
+  .tour svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .tcols { position: absolute; inset: 0; display: flex; justify-content: space-between; }
+  .tcol { display: flex; flex-direction: column; justify-content: space-around; position: relative; padding-top: 50px; }
+  .tcol .rt { position: absolute; top: 0; left: 0; right: 0; text-align: center; font-family: var(--fd); font-size: 28px; font-weight: 600; letter-spacing: .08em; opacity: .8; }
+  .tm { position: relative; background: rgba(10,10,12,.9); }
+  .tm .tid { position: absolute; top: -26px; left: 0; font-family: var(--fd); font-size: 18px; opacity: .5; }
+  .tm.live { outline: 4px solid #ffd84d; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { outline-color: rgba(255,216,77,.25); } }
+  .slot { display: flex; align-items: center; height: 64px; border: 1px solid rgba(255,255,255,.2); gap: 10px; padding-right: 0; }
+  .slot + .slot { border-top: 0; }
+  .slot i { width: 10px; align-self: stretch; flex: none; }
+  .slot.red i { background: var(--red); } .slot.blue i { background: var(--blue); }
+  .slot .mini { width: 50px; height: 50px; flex: none; background: center/contain no-repeat; display: grid; place-items: center; font-family: var(--fd); font-size: 24px; }
+  .slot .nm { flex: 1; min-width: 0; font-family: var(--fd); font-weight: 600; font-size: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot .nm.phl { font-family: 'Noto Sans JP', sans-serif; font-weight: 700; font-size: 22px; opacity: .5; }
+  .slot .ts { width: 64px; align-self: stretch; display: grid; place-items: center; font-family: var(--fd); font-weight: 700; font-size: 34px; background: rgba(255,255,255,.08); }
+  .slot.win.red { background: color-mix(in srgb, var(--red) 40%, #000); } .slot.win.blue { background: color-mix(in srgb, var(--blue) 45%, #000); }
+  .slot.win .ts { background: #fff; color: #000; }
+  .slot.lose { opacity: .4; }
+  .champ { text-align: center; margin-bottom: 26px; }
+  .champ .ct { font-family: var(--fd); font-size: 34px; letter-spacing: .3em; color: #ffd84d; }
+  .champ .cn { font-family: var(--fd); font-size: 52px; font-weight: 700; line-height: 1.1; }
+  .champ .ph { width: 240px; height: 220px; margin: 8px auto 10px; }
+  .champ .ph .ini { font-size: 110px; background: #222; }
+  .ph.nophoto { visibility: hidden; } .champ .ph.nophoto { display: none; }
+  .third { margin-top: 40px; }
+  .third .rt2 { text-align: center; font-family: var(--fd); font-size: 22px; opacity: .7; margin-bottom: 30px; }
+
+  /* ===== ロゴ ===== */
+  .hero { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 26px; }
+  .hero img { max-width: 1100px; max-height: 620px; object-fit: contain; }
+  .hero .t { font-family: var(--fd); font-weight: 700; font-size: 120px; line-height: 1.05; }
+  .hero .s { font-family: var(--fd); font-size: 48px; letter-spacing: .2em; opacity: .85; }
+  .empty { position: absolute; inset: 300px 0 0; text-align: center; font-size: 40px; opacity: .5; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="fx"></div><div id="bg"></div>
+  <div class="top" id="top"><div class="lbl" id="hl"></div><div class="logo" id="logo"></div><div class="lbl r" id="hr"></div></div>
+  <div id="view"></div>
+  <div class="demo" id="demo" hidden>DEMO</div>
+</div>
+<script type="module">
+import { $, esc, openStore, normalizeEvent, buildView, groupLabel, stageName, refName, imgSrc, judgesFor, DEMO } from './assets/core.js?v=7';
+
+const QS = new URLSearchParams(location.search);
+const OV = { view: QS.get('view'), league: QS.get('league'), match: QS.get('match') };   // 画面ごとに固定表示したいとき用
+$('#demo').hidden = !DEMO;
+
+// 1920x1080 を画面いっぱいに
+const stage = $('#stage');
+const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080); stage.style.transform = `translate(-50%,-50%) scale(${s})`; drawLines(); };
+addEventListener('resize', fit); fit();
+document.addEventListener('dblclick', () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.());
+let idleT; addEventListener('mousemove', () => { document.body.classList.remove('idle'); clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add('idle'), 2500); });
+
+const store = await openStore();
+let ev = null, V = null, images = {};
+const seen = {};      // 試合ごとの直前の状態（結果発表アニメーションの判定用）
+const revealAt = {};  // 発表した時刻
+let lastHtml = '', lastHead = '', lastFx = null;
+const FONTS = {
+  standard: "'Oswald', 'Noto Sans JP', sans-serif",
+  heavy: "'Anton', 'Dela Gothic One', sans-serif",
+  street: "'Permanent Marker', 'Yusei Magic', sans-serif",
+  pop: "'Rubik', 'Mochiy Pop One', sans-serif"
+};
+// 背景デザイン（背景画像が無いときに使う）
+function fxHtml(k) {
+  if (k === 'glow') return '<div class="fx-glow"></div><div class="fx-vig"></div>';
+  if (k === 'grid') return '<div class="fx-glow" style="opacity:.45"></div><div class="fx-grid"></div><div class="fx-vig"></div>';
+  if (k === 'dots') return '<div class="fx-glow" style="opacity:.5"></div><div class="fx-dots"></div><div class="fx-vig"></div>';
+  if (k === 'rope') {
+    // ダブルダッチの2本のロープ。両端（ターナーの手）を固定して、赤と青が交互に上下へ回る
+    const Y = 600, up = -180, down = 1260;
+    const d = c => `M-40 ${Y} C 520 ${c}, 1400 ${c}, 1960 ${Y}`;
+    const vals = (a, b) => `${d(a)};${d(b)};${d(a)}`;
+    const anim = (a, b) => `<animate attributeName="d" dur="2.6s" repeatCount="indefinite" values="${vals(a, b)}" keyTimes="0;.5;1" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1"/>`;
+    const rope = (id, col, a, b) => `<path id="${id}" fill="none" style="stroke:${col}" stroke-width="9" stroke-linecap="round">${anim(a, b)}</path>`;
+    return `<div class="fx-glow" style="opacity:.35"></div>
+      <svg viewBox="0 0 1920 1080" preserveAspectRatio="none"><defs><filter id="gl" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="14"/></filter></defs>
+      <g opacity=".85" filter="url(#gl)"><use href="#rp1"/><use href="#rp2"/></g>
+      <g opacity=".55">${rope('rp1', 'var(--red)', up, down)}${rope('rp2', 'var(--blue)', down, up)}</g></svg><div class="fx-vig"></div>`;
+  }
+  return '';
+}
+store.onEvent(e => { ev = normalizeEvent(e); V = buildView(ev); track(); render(); });
+store.onImages(m => { images = m; render(); });
+setInterval(render, 1000);
+
+function track() {
+  for (const m of ev.matches) {
+    const k = m.id + '#' + m.round, prev = seen[m.id];
+    if (prev && m.status === '確定' && (prev.status !== '確定' || prev.k !== k)) revealAt[k] = Date.now();
+    seen[m.id] = { status: m.status, k };
+  }
+}
+
+// 写真が無いときは設定どおり（何も出さない／頭文字）
+const photo = (r, cls = 'ph') => {
+  const t = r.team, src = t ? imgSrc(t.photo, images) : '';
+  const ini = esc((refName(r) || '?').trim().slice(0, 1));
+  if (!src && ev.settings.photoFallback !== 'initial') return `<div class="${cls} nophoto"></div>`;
+  return `<div class="${cls}">${src ? `<img src="${esc(src)}" alt="">` : `<div class="ini">${r.team ? ini : '?'}</div>`}</div>`;
+};
+const mini = r => {
+  const t = r.team, src = t ? imgSrc(t.photo, images) : '';
+  if (!src && ev.settings.photoFallback !== 'initial') return '';
+  return `<div class="mini" ${src ? `style="background-image:url('${esc(src)}')"` : ''}>${src ? '' : esc(t ? t.name.slice(0, 1) : '')}</div>`;
+};
+
+function render() {
+  if (!ev) return;
+  const S = ev.settings;
+  stage.style.setProperty('--red', S.red); stage.style.setProperty('--blue', S.blue); stage.style.setProperty('--bgc', S.bgColor || '#000');
+  const bg = imgSrc(S.bg, images);
+  $('#bg').style.backgroundImage = bg ? `url("${bg}")` : 'none';
+  stage.classList.toggle('slant', S.barStyle !== 'square');
+  stage.style.setProperty('--fd', FONTS[S.font] || FONTS.standard);
+  const fxKey = bg ? '' : (S.bgPreset || 'none');
+  if (fxKey !== lastFx) { lastFx = fxKey; $('#fx').innerHTML = fxHtml(fxKey); }
+
+  const sc = ev.screen || {};
+  const mode = OV.view || sc.mode || 'logo';
+  let hl = '', hr = '', body = '', showTop = true;
+  if (mode === 'battle') {
+    let ids = OV.match ? OV.match.split(',') : (sc.matches || []);
+    let ms = ids.map(id => V.matchById[id]).filter(Boolean);
+    if (!ms.length) ms = ev.matches.filter(m => m.status === '採点中').slice(0, 2);
+    if (!ms.length && QS.has('sample')) ms = [ev.matches.find(m => m.status === '確定') || ev.matches[0]].filter(Boolean);
+    if (!ms.length) { const done = ev.matches.filter(m => m.status === '確定' && m.at).sort((a, b) => b.at - a.at); ms = done.slice(0, 1); }
+    ms = ms.slice(0, 2);
+    if (!ms.length) body = '<div class="empty">バトルが選ばれていません</div>';
+    else if (ms.length === 1) { hl = groupLabel(ms[0], ev) + (ms[0].extra ? `  ·  EXTRA ${ms[0].extra}` : ''); hr = stageName(ms[0], ev); body = battle(ms[0], false); }
+    else body = `<div class="duo">${ms.map(m => battle(m, true)).join('')}</div>`;
+  } else if (mode === 'league') {
+    const lg = OV.league || sc.league || 'ALL';
+    const Ls = lg === 'ALL' ? V.leagues : V.leagues.filter(L => L === lg);
+    hl = `${S.prelimLabel || '予選'}  LEAGUE`; hr = S.subtitle || '';
+    const cols = Ls.length <= 1 ? 1 : Ls.length <= 4 ? 2 : 3;
+    const rowsN = Math.ceil(Ls.length / cols);
+    body = `<div class="leagues ${Ls.length === 1 ? 'single' : ''}" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rowsN},1fr)">${Ls.map(league).join('')}</div>`;
+  } else if (mode === 'tournament') {
+    hl = 'TOURNAMENT'; hr = S.subtitle || '';
+    body = tournament();
+  } else {
+    showTop = false;
+    const lg = imgSrc(S.logo, images);
+    body = `<div class="hero">${lg ? `<img src="${esc(lg)}" alt="">` : `<div class="t">${esc(S.eventName)}</div>`}${S.subtitle ? `<div class="s">${esc(S.subtitle)}</div>` : ''}</div>`;
+  }
+  const lg = imgSrc(S.logo, images);
+  const head = showTop + '|' + hl + '|' + hr + '|' + lg + '|' + S.eventName + S.subtitle;
+  if (head !== lastHead) {
+    lastHead = head;
+    $('#top').style.display = showTop ? '' : 'none';
+    $('#hl').textContent = hl; $('#hr').textContent = hr;
+    $('#logo').innerHTML = lg ? `<img src="${esc(lg)}" alt="">` : `<div><div class="t" style="white-space:nowrap;font-size:${Math.min(54, Math.floor(760 / Math.max(1, [...String(S.eventName)].length)))}px">${esc(S.eventName)}</div>${S.subtitle ? `<div class="s">${esc(S.subtitle)}</div>` : ''}</div>`;
+  }
+  if (body !== lastHtml) { lastHtml = body; $('#view').innerHTML = body; drawLines(); }
+}
+
+// ---------- バトル ----------
+function battle(m, half) {
+  const S = ev.settings;
+  const red = V.resolve(m.red), blue = V.resolve(m.blue);
+  const fin = m.status === '確定';
+  const k = m.id + '#' + m.round;
+  const jl = fin ? orderedScores(m) : V.judgesOf(m).map(j => ({ judge: j.id }));
+  const n = Math.max(1, jl.length);
+  const anim = fin && revealAt[k] && Date.now() - revealAt[k] < (n * 550 + 4500);
+  const d2 = n * 0.55 + 0.5, d3 = d2 + 0.6;
+  const cls = c => fin && m.winner && m.winner !== 'draw' ? (m.winner === c ? 'win' : 'lose') : '';
+  const side = (c, r) => `<div class="side ${c} ${cls(c)} ${fin ? 'fin' : ''}">
+      ${photo(r)}
+      ${fin ? `<div class="score"><span>${c === 'red' ? m.redTotal : m.blueTotal}</span></div>` : ''}
+      <div class="namebar"><div class="name ${r.team ? '' : 'ph-l'}" style="${fitName(refName(r), half, fin)}">${esc(refName(r))}</div>${r.team && S.showOrg && r.team.org ? `<div class="org">${esc(r.team.org)}</div>` : ''}</div>
+    </div>`;
+  const judges = jl.map((s, i) => {
+    const j = V.judgeById[s.judge] || { name: s.judge };
+    if (fin && s.red != null) {
+      const r = +s.red, b = +s.blue, v = r > b ? 'r' : b > r ? 'b' : 'e';
+      return `<div class="jc res ${v === 'r' ? 'vr' : v === 'b' ? 'vb' : ''}" style="--d:${i * 0.55}s"><div class="jname">${esc(j.name)}</div>
+        <div class="jv"><b class="${r < b ? 'lo' : ''}">${r}</b><i class="${v}">${v === 'r' ? '◀' : v === 'b' ? '▶' : '='}</i><b class="${b < r ? 'lo' : ''}">${b}</b></div></div>`;
+    }
+    return `<div class="jc"><div class="jname">${esc(j.name)}</div><div class="jv wait">${fin ? '-' : '·  ·  ·'}</div></div>`;
+  }).join('');
+  let banner;
+  if (fin) {
+    if (m.winner === 'red' || m.winner === 'blue') banner = `<div class="banner ${m.winner}"><span><span class="wt">WINNER</span>${esc(refName(m.winner === 'red' ? red : blue))}</span></div>`;
+    else banner = `<div class="banner"><span>${m.type === '本戦' ? 'EXTRA BATTLE NEEDED' : 'DRAW'}</span></div>`;
+  } else if (m.status === '採点中') banner = `<div class="banner"><span><span class="dots">JUDGING</span></span></div>`;
+  else banner = `<div class="banner"><span>NEXT BATTLE</span></div>`;
+  return `<div class="battle ${half ? 'half' : ''} ${anim ? 'anim' : ''}" style="--d2:${d2}s;--d3:${d3}s">
+    <div class="b-label"><b>${esc(groupLabel(m, ev))}${m.extra ? ` · EXTRA ${m.extra}` : ''}</b><span>${esc(stageName(m, ev))}</span></div>
+    <div class="b-main">${side('red', red)}<div class="vs">VS</div>${side('blue', blue)}</div>
+    <div class="jrow" style="grid-template-columns:repeat(${n},1fr)">${judges}</div>
+    ${banner}
+  </div>`;
+}
+function fitName(name, half, fin) {
+  // 半角1・全角2で数えて、枠に収まるよう文字サイズを下げる
+  const w = [...String(name)].reduce((a, ch) => a + (/[\x00-\x7f]/.test(ch) ? 1 : 1.8), 0);
+  const room = half ? (fin ? 13 : 17) : (fin ? 24 : 30), base = half ? 38 : 62;
+  return w > room ? `font-size:${Math.max(half ? 22 : 34, Math.floor(base * room / w))}px` : '';
+}
+function orderedScores(m) {
+  const order = judgesFor(m, ev);
+  const sc = (m.scores || []).slice();
+  sc.sort((a, b) => { const ia = order.indexOf(a.judge), ib = order.indexOf(b.judge); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
+  return sc.length ? sc : order.map(j => ({ judge: j }));
+}
+
+// ---------- リーグ ----------
+function league(L) {
+  const st = V.standings[L], S = ev.settings, q = +S.qualify || 0;
+  const live = st.matches.some(m => m.status === '採点中');
+  const rows = st.rows.map(r => {
+    const qual = st.done && !r.tie && r.rank <= q;
+    return `<tr class="${qual ? 'q' : ''}"><td class="rk">${r.rank}</td>
+      <td class="tm"><div class="tmw">${mini({ team: r.team })}<div><div class="nm">${esc(r.team.name)}${r.tie && st.done ? '<span class="tag">同率</span>' : ''}</div>${S.showOrg && r.team.org ? `<div class="og">${esc(r.team.org)}</div>` : ''}</div></div></td>
+      <td>${r.w}</td><td>${r.l}</td><td><b>${r.pt}</b></td></tr>`;
+  }).join('');
+  const res = st.matches.map(m => {
+    const a = V.resolve(m.red), b = V.resolve(m.blue);
+    if (m.status === '確定') {
+      const wr = m.winner === 'red' ? 'w' : m.winner === 'blue' ? 'l' : '', wb = m.winner === 'blue' ? 'w' : m.winner === 'red' ? 'l' : '';
+      return `<div><span class="${wr}">${esc(refName(a))}</span><span class="sc"><i class="r">${m.redTotal}</i> - <i class="b">${m.blueTotal}</i></span><span class="${wb}">${esc(refName(b))}</span></div>`;
+    }
+    return `<div><span>${esc(refName(a))}</span><span class="sc ${m.status === '採点中' ? 'live' : 'nx'}">${m.status === '採点中' ? 'JUDGING' : 'vs'}</span><span>${esc(refName(b))}</span></div>`;
+  }).join('');
+  return `<div class="lg"><div class="lg-h"><b>${esc(L)} LEAGUE</b>${st.done ? '<span class="fix">FINAL</span>' : live ? '<span>● LIVE</span>' : ''}</div>
+    <table class="lt"><thead><tr><th></th><th style="text-align:left;padding-left:14px">TEAM</th><th>WIN</th><th>LOSE</th><th>PT</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="lr">${res}</div></div>`;
+}
+
+// ---------- トーナメント ----------
+function tournament() {
+  const fm = ev.matches.filter(m => m.type === '本戦');
+  if (!fm.length) return '<div class="empty">本戦の対戦表がまだありません</div>';
+  const groups = [...new Set(fm.map(m => m.group))];
+  const third = groups.filter(g => /3位|3RD|THIRD/i.test(g));
+  const main = groups.filter(g => !third.includes(g));
+  const fg = main[main.length - 1];
+  const rounds = main.slice(0, -1);
+  const finals = fm.filter(m => m.group === fg);
+  const thirds = fm.filter(m => third.includes(m.group));
+  const colW = Math.min(360, Math.floor((1840 - rounds.length * 2 * 60) / (rounds.length * 2 + 1)));
+  const col = (ms, title) => `<div class="tcol" style="width:${colW}px"><div class="rt">${esc(title)}</div>${ms.map(box).join('')}</div>`;
+  const left = rounds.map(g => { const ms = fm.filter(m => m.group === g); return col(ms.slice(0, Math.ceil(ms.length / 2)), g); });
+  const right = rounds.map(g => { const ms = fm.filter(m => m.group === g); return col(ms.slice(Math.ceil(ms.length / 2)), g); }).reverse();
+  const F = finals[0];
+  let champ = '';
+  if (F && F.status === '確定' && (F.winner === 'red' || F.winner === 'blue')) {
+    const r = V.resolve(F[F.winner]);
+    champ = `<div class="champ"><div class="ct">CHAMPION</div>${photo(r)}<div class="cn">${esc(refName(r))}</div></div>`;
+  }
+  const center = `<div class="tcol" style="width:${colW + 40}px;justify-content:center"><div class="rt">${esc(fg)}</div>${champ}${finals.map(box).join('')}
+    ${thirds.length ? `<div class="third"><div class="rt2">${esc(thirds[0].group)}</div>${thirds.map(box).join('')}</div>` : ''}</div>`;
+  return `<div class="tour" id="tour"><svg id="tl"></svg><div class="tcols">${left.join('')}${center}${right.join('')}</div></div>`;
+}
+function box(m) {
+  const fin = m.status === '確定';
+  const slot = c => {
+    const r = V.resolve(m[c]);
+    const st = fin && m.winner !== 'draw' ? (m.winner === c ? 'win' : 'lose') : '';
+    const sc = fin ? (c === 'red' ? m.redTotal : m.blueTotal) : '';
+    return `<div class="slot ${c} ${st}" data-c="${c}"><i></i>${r.team ? mini(r) : ''}<span class="nm ${r.team ? '' : 'phl'}">${esc(refName(r))}</span><span class="ts">${sc}</span></div>`;
+  };
+  return `<div class="tm ${m.status === '採点中' ? 'live' : ''}" data-id="${esc(m.id)}"><span class="tid">${esc(m.id)}</span>${slot('red')}${slot('blue')}</div>`;
+}
+function drawLines() {
+  const tour = document.getElementById('tour'), svg = document.getElementById('tl');
+  if (!tour || !svg || !ev) return;
+  const s = stage.getBoundingClientRect().width / 1920;
+  const base = tour.getBoundingClientRect();
+  const R = el => { const b = el.getBoundingClientRect(); return { l: (b.left - base.left) / s, r: (b.right - base.left) / s, t: (b.top - base.top) / s, b: (b.bottom - base.top) / s }; };
+  let out = '';
+  for (const m of ev.matches.filter(m => m.type === '本戦')) {
+    for (const c of ['red', 'blue']) {
+      const mm = String(m[c] || '').match(/^(勝者|敗者)\s*[:：]?\s*(.+)$/);
+      if (!mm || mm[1] !== '勝者') continue;
+      const src = tour.querySelector(`.tm[data-id="${CSS.escape(mm[2].trim())}"]`);
+      const dst = tour.querySelector(`.tm[data-id="${CSS.escape(m.id)}"] .slot[data-c="${c}"]`);
+      if (!src || !dst) continue;
+      const a = R(src), b = R(dst);
+      const ltr = (a.l + a.r) / 2 < (b.l + b.r) / 2;
+      const x1 = ltr ? a.r : a.l, x2 = ltr ? b.l : b.r, y1 = (a.t + a.b) / 2, y2 = (b.t + b.b) / 2, xm = (x1 + x2) / 2;
+      const srcM = V.matchById[mm[2].trim()];
+      const on = srcM && srcM.status === '確定' && (srcM.winner === 'red' || srcM.winner === 'blue');
+      out += `<path d="M${x1} ${y1} H${xm} V${y2} H${x2}" fill="none" stroke="${on ? '#fff' : 'rgba(255,255,255,.3)'}" stroke-width="${on ? 4 : 2}"/>`;
+    }
+  }
+  svg.innerHTML = out;
+}
+</script>
+</body>
+</html>
