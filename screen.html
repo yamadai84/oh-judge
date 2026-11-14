@@ -6,16 +6,8 @@
 <title>スクリーン</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Noto+Sans+JP:wght@500;700;900&family=Anton&family=Dela+Gothic+One&family=Permanent+Marker&family=Yusei+Magic&family=Rubik:wght@700;800&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Noto+Sans+JP:wght@500;700;900&family=Anton&family=Dela+Gothic+One&family=Permanent+Marker&family=Rubik:wght@700;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=M+PLUS+1:wght@500;700;800;900&family=Murecho:wght@500;700;800;900&display=swap" rel="stylesheet">
 <style>
-  /* A P-OTF ゴシックMB101 Pr6N（モリサワ）。ファイルは配らず、表示するPCに入っているフォントを使う */
-  @font-face { font-family: 'MB101'; font-weight: 300; src: local('PGothicMB101Pr6N-Light'), local('A P-OTF Gothic MB101 Pr6N L'); }
-  @font-face { font-family: 'MB101'; font-weight: 400; src: local('PGothicMB101Pr6N-Regular'), local('A P-OTF Gothic MB101 Pr6N R'); }
-  @font-face { font-family: 'MB101'; font-weight: 500; src: local('PGothicMB101Pr6N-Medium'), local('A P-OTF Gothic MB101 Pr6N M'); }
-  @font-face { font-family: 'MB101'; font-weight: 600; src: local('PGothicMB101Pr6N-DeBold'), local('A P-OTF Gothic MB101 Pr6N DB'); }
-  @font-face { font-family: 'MB101'; font-weight: 700; src: local('PGothicMB101Pr6N-Bold'), local('A P-OTF Gothic MB101 Pr6N B'); }
-  @font-face { font-family: 'MB101'; font-weight: 800; src: local('PGothicMB101Pr6N-Heavy'), local('A P-OTF Gothic MB101 Pr6N H'); }
-  @font-face { font-family: 'MB101'; font-weight: 900; src: local('PGothicMB101Pr6N-Ultra'), local('A P-OTF Gothic MB101 Pr6N U'); }
   :root { --red: #e60023; --blue: #0b57a4; --bgc: #000; --fd: 'Oswald', 'Noto Sans JP', sans-serif; }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color: #fff; font-family: 'Noto Sans JP', sans-serif; }
@@ -216,7 +208,7 @@
   <div class="demo" id="demo" hidden>DEMO</div>
 </div>
 <script type="module">
-import { $, esc, openStore, normalizeEvent, buildView, groupLabel, stageName, refName, imgSrc, judgesFor, DEMO } from './assets/core.js?v=8';
+import { $, esc, openStore, normalizeEvent, buildView, groupLabel, stageName, refName, imgSrc, judgesFor, DEMO } from './assets/core.js?v=10';
 
 const QS = new URLSearchParams(location.search);
 const OV = { view: QS.get('view'), league: QS.get('league'), match: QS.get('match') };   // 画面ごとに固定表示したいとき用
@@ -234,13 +226,9 @@ let ev = null, V = null, images = {};
 const seen = {};      // 試合ごとの直前の状態（結果発表アニメーションの判定用）
 const revealAt = {};  // 発表した時刻
 let lastHtml = '', lastHead = '', lastFx = null;
-const FONTS = {
-  standard: "'Oswald', 'Noto Sans JP', sans-serif",
-  heavy: "'Anton', 'Dela Gothic One', sans-serif",
-  street: "'Permanent Marker', 'Yusei Magic', sans-serif",
-  pop: "'Rubik', 'Mochiy Pop One', sans-serif",
-  mb101: "'MB101', 'Noto Sans JP', sans-serif"
-};
+// 英字と日本語は別々に選ぶ。英字フォントには日本語の文字が無いので、日本語は自動で JA のフォントになる
+const LATIN = { standard: "'Oswald'", heavy: "'Anton'", street: "'Permanent Marker'", pop: "'Rubik'" };
+const JA = { zenkaku: "'Zen Kaku Gothic New'", mplus: "'M PLUS 1'", murecho: "'Murecho'", noto: "'Noto Sans JP'", dela: "'Dela Gothic One'" };
 // 背景デザイン（背景画像が無いときに使う）
 function fxHtml(k) {
   if (k === 'glow') return '<div class="fx-glow"></div><div class="fx-vig"></div>';
@@ -292,7 +280,7 @@ function render() {
   const bg = imgSrc(S.bg, images);
   $('#bg').style.backgroundImage = bg ? `url("${bg}")` : 'none';
   stage.classList.toggle('slant', S.barStyle !== 'square');
-  stage.style.setProperty('--fd', FONTS[S.font] || FONTS.standard);
+  stage.style.setProperty('--fd', `${LATIN[S.font] || LATIN.heavy}, ${JA[S.fontJa] || JA.noto}, sans-serif`);
   const fxKey = bg ? '' : (S.bgPreset || 'none');
   if (fxKey !== lastFx) { lastFx = fxKey; $('#fx').innerHTML = fxHtml(fxKey); }
 
@@ -377,7 +365,7 @@ function fitName(name, half, fin) {
   // 半角1・全角2で数えて、枠に収まるよう文字サイズを下げる
   const w = [...String(name)].reduce((a, ch) => a + (/[\x00-\x7f]/.test(ch) ? 1 : 1.8), 0);
   // フォントごとの文字幅（Oswald・Anton を 1 とした目安）
-  const wide = { standard: 1, heavy: 1, street: 1.3, pop: 1.35, mb101: 1.5 }[ev.settings.font] || 1;
+  const wide = { standard: 1, heavy: 1, street: 1.3, pop: 1.35 }[ev.settings.font] || 1;
   const room = (half ? (fin ? 13 : 17) : (fin ? 24 : 30)) / wide, base = half ? 38 : 62;
   return w > room ? `font-size:${Math.max(half ? 22 : 34, Math.floor(base * room / w))}px` : '';
 }

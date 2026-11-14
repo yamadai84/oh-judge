@@ -41,7 +41,8 @@ export const DEFAULT_SETTINGS = {
   showOrg: true,
   barStyle: 'slant',   // slant=斜め / square=四角（and8風）
   bgPreset: 'rope',    // rope / glow / grid / dots / none（背景画像があればそちらが優先）
-  font: 'heavy',       // standard / heavy / street / pop
+  font: 'heavy',       // 英字フォント：standard / heavy / street / pop
+  fontJa: 'noto',      // 日本語フォント：noto（初期）/ zenkaku / mplus / murecho / noto / dela（どれも Web フォントなのでどのPCでも同じ）
   photoFallback: 'none' // 写真が無いとき：none=何も出さない / initial=頭文字
 };
 

@@ -125,7 +125,7 @@
 <input type="file" id="jsonFile" accept="application/json" hidden>
 
 <script type="module">
-import { $, $$, esc, clone, uid, toast, DEMO, openStore, normalizeEvent, buildView, emptyEvent, sampleEvent, genLeagueMatches, genFinalMatches, newMatch, judgesFor, groupLabel, stageName, refName, imgSrc, fileToDataUrl, tally, leaguesOf } from './assets/core.js?v=8';
+import { $, $$, esc, clone, uid, toast, DEMO, openStore, normalizeEvent, buildView, emptyEvent, sampleEvent, genLeagueMatches, genFinalMatches, newMatch, judgesFor, groupLabel, stageName, refName, imgSrc, fileToDataUrl, tally, leaguesOf } from './assets/core.js?v=10';
 
 const store = await openStore();
 const app = $('#app');
@@ -518,7 +518,8 @@ function settingsTab() {
     ${sel('bgPreset', '背景デザイン', [['rope', 'ロープ（2本のロープが回る）'], ['glow', '光（赤・青のグロー）'], ['grid', 'グリッド'], ['dots', 'ドット'], ['none', 'なし（背景色だけ）']], '背景画像を入れた場合は画像が優先')}
     ${sel('photoFallback', '写真が無いとき', [['none', '何も出さない'], ['initial', 'チーム名の頭文字を出す']])}
     ${sel('barStyle', '名前バーの形', [['slant', '斜め'], ['square', '四角（and8風）']])}
-    ${sel('font', 'フォント', [['heavy', '極太（Anton＋デラゴシック）'], ['standard', 'スタンダード（Oswald）'], ['street', 'ストリート（手書き風）'], ['pop', 'ポップ（丸み・キッズ向け）'], ['mb101', 'ゴシックMB101（スクリーンのPCに入っている場合のみ）']])}
+    ${sel('font', '英字フォント', [['heavy', '極太（Anton）'], ['standard', 'スタンダード（Oswald）'], ['street', 'ストリート（手書き風）'], ['pop', 'ポップ（丸み）']])}
+    ${sel('fontJa', '日本語フォント', [['noto', 'Noto Sans JP（標準）'], ['zenkaku', 'Zen角ゴシック New（すっきり）'], ['mplus', 'M PLUS 1（モダン）'], ['murecho', 'Murecho（細長でシャープ）'], ['dela', 'デラゴシック（極太）']], 'どれもWebフォントなので、どのPCでも同じに見えます')}
     ${col('bgColor', '背景色')}${col('red', '赤コーナーの色')}${col('blue', '青コーナーの色')}
     ${tx('stage1Name', 'ステージ1の名前')}${tx('stage2Name', 'ステージ2の名前')}${tx('prelimLabel', '予選の呼び方', '予選')}
     <label>所属団体を表示</label><div><input type="checkbox" class="cb" data-ed="set" data-f="showOrg" ${S.showOrg ? 'checked' : ''}></div>
