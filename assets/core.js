@@ -54,6 +54,8 @@ export function normalizeEvent(ev) {
   ev.settings = Object.assign(clone(DEFAULT_SETTINGS), ev.settings || {});
   ev.teams ||= []; ev.judges ||= []; ev.matches ||= []; ev.live ||= {};
   ev.screen = Object.assign({ mode: 'logo', matches: [], league: 'ALL' }, ev.screen || {});
+  // 管理画面で選んだ内容はまず下書きに入り、「スクリーンに反映」を押したときに screen へコピーされる
+  ev.screenDraft = ev.screenDraft ? Object.assign({ mode: 'logo', matches: [], league: 'ALL' }, ev.screenDraft) : clone(ev.screen);
   return ev;
 }
 

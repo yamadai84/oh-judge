@@ -97,6 +97,15 @@
   .imgset { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .imgset .prev { width: 180px; height: 100px; border-radius: 8px; border: 1px solid var(--line); background: #222 center/contain no-repeat; }
   .cb { width: 20px; height: 20px; }
+  .pvs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .pvs iframe { width: 100%; aspect-ratio: 16 / 9; border: 3px solid transparent; border-radius: 10px; background: #000; display: block; }
+  .pvh { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  #pvDraftBox.pending iframe { border-color: var(--warn); }
+  #pvDraftBox.pending .pvh { color: var(--warn); }
+  .apply { font-size: 16px; padding: 12px 22px; }
+  .apply.pending { background: var(--warn); border-color: var(--warn); color: #fff; animation: blinkBtn 1.6s infinite; }
+  @keyframes blinkBtn { 50% { opacity: .75; } }
+  @media (max-width: 760px) { .pvs { grid-template-columns: 1fr; } }
   .pv { max-width: 1280px; margin: 18px auto 0; padding: 0 18px; }
   .pv iframe { width: 100%; max-width: 960px; aspect-ratio: 16 / 9; border: 0; border-radius: 10px; background: #000; display: block; }
 
@@ -116,7 +125,7 @@
 <input type="file" id="jsonFile" accept="application/json" hidden>
 
 <script type="module">
-import { $, $$, esc, clone, uid, toast, DEMO, openStore, normalizeEvent, buildView, emptyEvent, sampleEvent, genLeagueMatches, genFinalMatches, newMatch, judgesFor, groupLabel, stageName, refName, imgSrc, fileToDataUrl, tally, leaguesOf } from './assets/core.js?v=7';
+import { $, $$, esc, clone, uid, toast, DEMO, openStore, normalizeEvent, buildView, emptyEvent, sampleEvent, genLeagueMatches, genFinalMatches, newMatch, judgesFor, groupLabel, stageName, refName, imgSrc, fileToDataUrl, tally, leaguesOf } from './assets/core.js?v=8';
 
 const store = await openStore();
 const app = $('#app');
@@ -158,6 +167,12 @@ function start() {
     <div id="pv" class="pv" hidden><div class="card" style="margin:0"><h2>スクリーンのプレビュー <small>設定を変えるとすぐ反映されます</small></h2>
       <div class="seg" style="margin-bottom:10px">${[['battle', 'バトル'], ['league', 'リーグ表'], ['tournament', 'トーナメント'], ['logo', 'ロゴ']].map(([k, l], i) => `<button data-pv="${k}" class="${i ? '' : 'on'}">${l}</button>`).join('')}</div>
       <iframe id="pvf" src="screen.html?view=battle&sample=1${location.search.includes('demo') ? '&demo' : ''}"></iframe></div></div>
+    <div id="runTop" class="pv" hidden><div class="card" style="margin:0">
+      <div id="scCtl"></div>
+      <div class="pvs">
+        <div><div class="pvh">いまのスクリーン</div><iframe id="pvLive"></iframe></div>
+        <div id="pvDraftBox"><div class="pvh">「スクリーンに反映」を押したあと</div><iframe id="pvDraft"></iframe></div>
+      </div></div></div>
     <main id="main"></main>`;
   store.onEvent(e => { ev = normalizeEvent(e); V = buildView(ev); render(); }, ok => { const c = $('#conn'); c.className = 'conn ' + (ok ? 'ok' : 'ng'); c.textContent = ok ? '接続中' : '切断'; });
   store.onImages(m => { images = m; render(); });
@@ -171,6 +186,8 @@ function render(force) {
   $('#hname').textContent = (ev.settings.eventName || '') + '　管理画面';
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   $('#pv').hidden = tab !== 'settings';
+  $('#runTop').hidden = tab !== 'run';
+  if (tab === 'run') renderScreenCtl();
   if (!force && tab !== 'run' && editingNow()) { pending = true; return; }
   pending = false;
   const html = { run: runTab, teams: teamsTab, judges: judgesTab, matches: matchesTab, settings: settingsTab }[tab]();
@@ -188,10 +205,7 @@ const save = async (fn, msg) => {
 
 // ===================== 進行 =====================
 function runTab() {
-  const sc = ev.screen, S = ev.settings;
-  const modeBtn = (k, l) => `<button data-act="mode" data-v="${k}" class="${sc.mode === k ? 'on' : ''}">${l}</button>`;
-  const onScreen = (sc.matches || []).map(id => `<span class="chip">${esc(id)}<button data-act="unshow" data-id="${esc(id)}">×</button></span>`).join(' ') || '<span class="muted">（未選択：採点中のバトルを自動で表示）</span>';
-  const leagues = V.leagues;
+  const S = ev.settings;
   const fl = [['all', 'すべて'], ['s1', S.stage1Name], ['s2', S.stage2Name], ['final', '本戦'], ['rank', '予選の順位']];
   let list;
   if (filter === 'rank') list = standingsHtml();
@@ -199,13 +213,7 @@ function runTab() {
     const ms = ev.matches.filter(m => filter === 'all' || (filter === 'final' ? m.type === '本戦' : (m.type === '予選' && String(m.stage) === (filter === 's2' ? '2' : '1'))));
     list = ms.length ? `<div class="mlist">${ms.map(matchRow).join('')}</div>` : '<p class="muted">対戦がありません。「対戦表」タブで作成してください。</p>';
   }
-  return `<div class="card"><h2>📺 スクリーン表示</h2>
-      <div class="row"><div class="seg">${modeBtn('logo', 'ロゴ')}${modeBtn('battle', 'バトル')}${modeBtn('league', 'リーグ表')}${modeBtn('tournament', 'トーナメント')}</div>
-      ${sc.mode === 'league' ? `<div class="seg">${['ALL', ...leagues].map(L => `<button data-act="league" data-v="${L}" class="${(sc.league || 'ALL') === L ? 'on' : ''}">${L === 'ALL' ? '全リーグ' : L}</button>`).join('')}</div>` : ''}</div>
-      <div class="row" style="margin-top:12px"><b>バトル画面に出す試合：</b>${onScreen}</div>
-      <label class="row hint" style="margin-top:10px"><input type="checkbox" class="cb" data-act="autoshow" ${autoShow ? 'checked' : ''}> 「採点開始」を押したら、その試合を自動でスクリーンに出す（2ステージ同時なら左右に並びます）</label>
-    </div>
-    <div class="filters seg">${fl.map(([k, l]) => `<button data-act="filter" data-v="${k}" class="${filter === k ? 'on' : ''}">${esc(l)}</button>`).join('')}</div>
+  return `<div class="filters seg" style="margin-top:16px">${fl.map(([k, l]) => `<button data-act="filter" data-v="${k}" class="${filter === k ? 'on' : ''}">${esc(l)}</button>`).join('')}</div>
     ${list}`;
 }
 
@@ -222,12 +230,12 @@ function matchRow(m) {
   }).join('') || '<span class="err">審査員が未設定</span>';
   const got = live ? js.filter(id => mine.some(x => x.judge === id)).length : 0;
   const t = (r, c) => `<div class="t ${c[0]} ${r.team ? '' : 'ph'} ${fin && m.winner === c ? 'w' : ''}">${esc(refName(r))}${r.team && r.team.org ? `<small>${esc(r.team.org)}</small>` : ''}</div>`;
-  const shown = (ev.screen.matches || []).includes(m.id);
+  const shown = (ev.screenDraft.matches || []).includes(m.id);
   let acts = '';
   if (m.status === '未開始') acts = `<button class="btn pri" data-act="start" data-id="${esc(m.id)}">採点開始</button>`;
-  if (live) acts = `<button class="btn ${got === js.length ? 'go' : 'warn'}" data-act="reflect" data-id="${esc(m.id)}">反映 ${got}/${js.length}</button><button class="btn sm" data-act="reset" data-id="${esc(m.id)}">取消</button>`;
+  if (live) acts = `<button class="btn ${got === js.length ? 'go' : 'warn'}" data-act="reflect" data-id="${esc(m.id)}">結果を反映 ${got}/${js.length}</button><button class="btn sm" data-act="reset" data-id="${esc(m.id)}">取消</button>`;
   if (fin) acts = `<button class="btn sm" data-act="extra" data-id="${esc(m.id)}">延長（再採点）</button><button class="btn sm" data-act="reset" data-id="${esc(m.id)}">取消</button>`;
-  acts += `<button class="btn tv ${shown ? 'on' : ''}" title="スクリーンに出す" data-act="show" data-id="${esc(m.id)}">📺</button>`;
+  acts += `<button class="btn tv ${shown ? 'on' : ''}" title="スクリーンの下書きに入れる／外す" data-act="show" data-id="${esc(m.id)}">📺</button>`;
   return `<div class="m s-${m.status}">
     <div class="id">${esc(m.id)}<small>${esc(m.type === '予選' ? `${m.group}リーグ・${stageName(m, ev)}` : m.group)}${m.extra ? `・延長${m.extra}` : ''}</small><span class="st s-${m.status}">${m.status}</span></div>
     <div class="vs">${t(red, 'red')}<div class="x">${fin ? `<span class="rs">${m.redTotal}</span> - <span class="bs">${m.blueTotal}</span>` : 'vs'}</div>${t(blue, 'blue')}</div>
@@ -251,26 +259,62 @@ function standingsHtml() {
 }
 
 function screenAdd(e, m) {
-  const cur = (e.screen.matches || []).map(id => e.matches.find(x => x.id === id)).filter(Boolean);
+  const d = e.screenDraft;
+  const cur = (d.matches || []).map(id => e.matches.find(x => x.id === id)).filter(Boolean);
   let keep = cur.filter(x => x.type === m.type && String(x.stage) !== String(m.stage) && x.id !== m.id);
   if (m.type === '本戦') keep = [];
-  e.screen.matches = [...keep.slice(-1).map(x => x.id), m.id];
-  e.screen.mode = 'battle';
+  d.matches = [...keep.slice(-1).map(x => x.id), m.id];
+  d.mode = 'battle';
+}
+
+// ---------- スクリーンの下書きと反映 ----------
+const scKey = s => JSON.stringify({ mode: s.mode, matches: s.matches || [], league: s.league || 'ALL' });
+const scUrl = s => {
+  const q = new URLSearchParams({ view: s.mode, league: s.league || 'ALL', match: (s.matches || []).join(',') });
+  if (location.search.includes('demo')) q.set('demo', '');
+  return 'screen.html?' + q.toString();
+};
+const modeName = { logo: 'ロゴ', battle: 'バトル', league: 'リーグ表', tournament: 'トーナメント' };
+let lastCtl = '', lastDraftUrl = '';
+function renderScreenCtl() {
+  const d = ev.screenDraft, live = ev.screen;
+  const pending = scKey(d) !== scKey(live);
+  const modeBtn = (k, l) => `<button data-act="mode" data-v="${k}" class="${d.mode === k ? 'on' : ''}">${l}</button>`;
+  const chips = (d.matches || []).map(id => `<span class="chip">${esc(id)}<button data-act="unshow" data-id="${esc(id)}">×</button></span>`).join(' ') || '<span class="muted">（未選択：採点中のバトルを自動で表示）</span>';
+  const liveDesc = modeName[live.mode] + (live.mode === 'battle' && live.matches.length ? `（${live.matches.join('・')}）` : '') + (live.mode === 'league' ? `（${live.league === 'ALL' ? '全リーグ' : live.league}）` : '');
+  const html = `<h2>📺 スクリーン表示 <small>選んだ内容は下書きです。「スクリーンに反映」を押すまで、会場のスクリーンは変わりません</small></h2>
+    <div class="row"><div class="seg">${modeBtn('logo', 'ロゴ')}${modeBtn('battle', 'バトル')}${modeBtn('league', 'リーグ表')}${modeBtn('tournament', 'トーナメント')}</div>
+    ${d.mode === 'league' ? `<div class="seg">${['ALL', ...V.leagues].map(L => `<button data-act="league" data-v="${L}" class="${(d.league || 'ALL') === L ? 'on' : ''}">${L === 'ALL' ? '全リーグ' : L}</button>`).join('')}</div>` : ''}</div>
+    ${d.mode === 'battle' ? `<div class="row" style="margin-top:12px"><b>バトル画面に出す試合：</b>${chips}</div>` : ''}
+    <label class="row hint" style="margin-top:10px"><input type="checkbox" class="cb" data-act="autoshow" ${autoShow ? 'checked' : ''}> 「採点開始」を押したら、その試合を下書きに入れる（2ステージ同時なら左右に並びます）</label>
+    <div class="row" style="margin-top:14px;gap:12px">
+      <button class="btn pri apply ${pending ? 'pending' : ''}" data-act="applyScreen" ${pending ? '' : 'disabled'}>📺 スクリーンに反映</button>
+      ${pending ? '<button class="btn sm" data-act="revertScreen">下書きを取り消す</button>' : ''}
+      <span class="hint">いまのスクリーン：<b>${esc(liveDesc)}</b>${pending ? '　<span style="color:var(--warn);font-weight:700">● 反映していない変更があります</span>' : ''}</span>
+    </div>`;
+  if (html !== lastCtl) { lastCtl = html; $('#scCtl').innerHTML = html; }
+  $('#pvDraftBox').classList.toggle('pending', pending);
+  const live0 = 'screen.html' + (location.search.includes('demo') ? '?demo' : '');
+  if (!$('#pvLive').getAttribute('src')) $('#pvLive').src = live0;
+  const du = scUrl(d);
+  if (du !== lastDraftUrl) { lastDraftUrl = du; $('#pvDraft').src = du; }
 }
 
 async function act(a, el) {
   const id = el.dataset.id;
   const find = e => e.matches.find(x => x.id === id);
-  if (a === 'mode') return save(e => { e.screen.mode = el.dataset.v; });
-  if (a === 'league') return save(e => { e.screen.league = el.dataset.v; });
+  if (a === 'mode') return save(e => { e.screenDraft.mode = el.dataset.v; });
+  if (a === 'league') return save(e => { e.screenDraft.league = el.dataset.v; });
+  if (a === 'applyScreen') return save(e => { e.screen = clone(e.screenDraft); }, 'スクリーンに反映しました');
+  if (a === 'revertScreen') return save(e => { e.screenDraft = clone(e.screen); }, '下書きを取り消しました');
   if (a === 'filter') { filter = el.dataset.v; LS.set('bj_admin_filter', filter); return render(true); }
   if (a === 'autoshow') { autoShow = el.checked; LS.set('bj_autoshow', autoShow); return; }
-  if (a === 'unshow') return save(e => { e.screen.matches = e.screen.matches.filter(x => x !== id); });
+  if (a === 'unshow') return save(e => { e.screenDraft.matches = e.screenDraft.matches.filter(x => x !== id); });
   if (a === 'show') return save(e => {
-    const m = find(e); if (!m) return;
-    if (e.screen.matches.includes(id) && e.screen.mode === 'battle') e.screen.matches = e.screen.matches.filter(x => x !== id);
-    else { e.screen.matches = [...e.screen.matches.filter(x => x !== id), id].slice(-2); e.screen.mode = 'battle'; }
-  });
+    const m = find(e), d = e.screenDraft; if (!m) return;
+    if (d.matches.includes(id) && d.mode === 'battle') d.matches = d.matches.filter(x => x !== id);
+    else { d.matches = [...d.matches.filter(x => x !== id), id].slice(-2); d.mode = 'battle'; }
+  }, '下書きに入れました（「スクリーンに反映」で切り替わります）');
   if (a === 'start') {
     const m = V.matchById[id];
     const js = judgesFor(m, ev);
@@ -348,13 +392,13 @@ async function act(a, el) {
     let n = 1; while (e.matches.some(m => m.id === base + n)) n++;
     e.matches.push(newMatch({ id: base + n, type, group: type === '本戦' ? 'TOP8' : (leaguesOf(e)[0] || 'A'), stage: 1 }));
   });
-  if (a === 'delMatch') { if (!confirm(`${id} を削除しますか？`)) return; return save(e => { e.matches = e.matches.filter(m => m.id !== id); delete e.live[id]; e.screen.matches = e.screen.matches.filter(x => x !== id); }); }
+  if (a === 'delMatch') { if (!confirm(`${id} を削除しますか？`)) return; return save(e => { e.matches = e.matches.filter(m => m.id !== id); delete e.live[id]; e.screen.matches = e.screen.matches.filter(x => x !== id); e.screenDraft.matches = e.screenDraft.matches.filter(x => x !== id); }); }
   if (a === 'up' || a === 'down') return save(e => { const i = e.matches.findIndex(m => m.id === id), j = a === 'up' ? i - 1 : i + 1; if (i < 0 || j < 0 || j >= e.matches.length) return; [e.matches[i], e.matches[j]] = [e.matches[j], e.matches[i]]; });
   if (a === 'jdef') { const k = el.dataset.k; return save(e => { const s = new Set(e.settings[k]); el.checked ? s.add(id) : s.delete(id); e.settings[k] = e.judges.map(j => j.id).filter(x => s.has(x)); }); }
   if (a === 'pass') return changePass(el.dataset.k);
   if (a === 'resetResults') {
     if (!confirm('すべての試合の結果を消して「未開始」に戻します。チーム・審査員・設定は残ります。よろしいですか？')) return;
-    return save(e => { e.matches.forEach(x => Object.assign(x, { status: '未開始', round: x.round + 1, extra: 0, redTotal: null, blueTotal: null, winner: '', scores: [], at: null })); e.live = {}; e.screen.matches = []; }, '結果をリセットしました');
+    return save(e => { e.matches.forEach(x => Object.assign(x, { status: '未開始', round: x.round + 1, extra: 0, redTotal: null, blueTotal: null, winner: '', scores: [], at: null })); e.live = {}; e.screen.matches = []; e.screenDraft.matches = []; }, '結果をリセットしました');
   }
   if (a === 'export') {
     const blob = new Blob([JSON.stringify({ event: ev, images }, null, 1)], { type: 'application/json' });
@@ -474,7 +518,7 @@ function settingsTab() {
     ${sel('bgPreset', '背景デザイン', [['rope', 'ロープ（2本のロープが回る）'], ['glow', '光（赤・青のグロー）'], ['grid', 'グリッド'], ['dots', 'ドット'], ['none', 'なし（背景色だけ）']], '背景画像を入れた場合は画像が優先')}
     ${sel('photoFallback', '写真が無いとき', [['none', '何も出さない'], ['initial', 'チーム名の頭文字を出す']])}
     ${sel('barStyle', '名前バーの形', [['slant', '斜め'], ['square', '四角（and8風）']])}
-    ${sel('font', 'フォント', [['heavy', '極太（Anton＋デラゴシック）'], ['standard', 'スタンダード（Oswald）'], ['street', 'ストリート（手書き風）'], ['pop', 'ポップ（丸み・キッズ向け）']])}
+    ${sel('font', 'フォント', [['heavy', '極太（Anton＋デラゴシック）'], ['standard', 'スタンダード（Oswald）'], ['street', 'ストリート（手書き風）'], ['pop', 'ポップ（丸み・キッズ向け）'], ['mb101', 'ゴシックMB101（スクリーンのPCに入っている場合のみ）']])}
     ${col('bgColor', '背景色')}${col('red', '赤コーナーの色')}${col('blue', '青コーナーの色')}
     ${tx('stage1Name', 'ステージ1の名前')}${tx('stage2Name', 'ステージ2の名前')}${tx('prelimLabel', '予選の呼び方', '予選')}
     <label>所属団体を表示</label><div><input type="checkbox" class="cb" data-ed="set" data-f="showOrg" ${S.showOrg ? 'checked' : ''}></div>
@@ -561,6 +605,7 @@ document.addEventListener('change', e => {
         m.id = v;
         x.matches.forEach(o => ['red', 'blue'].forEach(c => { o[c] = String(o[c] || '').replace(new RegExp(`^(勝者|敗者)\\s*[:：]?\\s*${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), `$1:${v}`); }));
         x.screen.matches = x.screen.matches.map(s => (s === id ? v : s));
+        x.screenDraft.matches = x.screenDraft.matches.map(s => (s === id ? v : s));
       }, '保存しました');
     }
     return save(x => {
